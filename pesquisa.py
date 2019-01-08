@@ -17,15 +17,16 @@ import logging
 
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
+WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
 
 app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ## TODO: Preparar o log geral
-logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
+logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
 
 #Obtendo senhas
-lines = [line.rstrip('\n') for line in open('senhas.pass')]
+lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
 PASSWORD = lines[0]
 GMAIL_PASSWORD = lines[1]
 
