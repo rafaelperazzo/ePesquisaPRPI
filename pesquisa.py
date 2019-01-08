@@ -7,14 +7,64 @@ import sqlite3
 import MySQLdb
 from werkzeug.utils import secure_filename
 import os
+import string
+import random
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.MIMEImage import MIMEImage
+from email.mime.text import MIMEText
+import logging
 
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
-ALLOWED_EXTENSIONS = set(['pdf'])
-PASSWORD = ""
+ALLOWED_EXTENSIONS = set(['pdf','xml'])
 
 app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+## TODO: Preparar o log geral
+logging.basicConfig(filename='app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
+
+#Obtendo senhas
+lines = [line.rstrip('\n') for line in open('senhas.pass')]
+PASSWORD = lines[0]
+GMAIL_PASSWORD = lines[1]
+
+def enviarEmail(to,subject,body):
+    gmail_user = 'pesquisa.prpi@ufca.edu.br'
+    gmail_password = GMAIL_PASSWORD
+    sent_from = gmail_user
+    para = [to]
+    #msg = MIMEMultipart()
+    msg = MIMEText(body)
+    msg['From'] = gmail_user
+    msg['To'] = to
+    msg['Subject'] = subject
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.ehlo()
+        server.login(gmail_user, gmail_password)
+        server.sendmail(sent_from, to, msg.as_string())
+        server.close()
+        return (True)
+    except:
+        return (False)
+
+def atualizar(consulta):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.autocommit(False)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    try:
+        cursor.execute(consulta)
+        conn.commit()
+    except MySQLdb.Error, e:
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def id_generator(size=20, chars=string.ascii_uppercase + string.digits + string.ascii_lowercase):
+        return ''.join(random.choice(chars) for _ in range(size))
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -51,10 +101,10 @@ def gerarDeclaracao(identificador):
     vigencia_inicio = linha[5]
     vigencia_fim = linha[6]
     id_projeto = linha[7]
-	
-    consulta = "INSERT INTO autenticacao (idAluno,codigo,data) VALUES (" + str(identificador) + ",FLOOR(RAND()*(100000000-10000+1))+10000,NOW())"	
+
+    consulta = "INSERT INTO autenticacao (idAluno,codigo,data) VALUES (" + str(identificador) + ",FLOOR(RAND()*(100000000-10000+1))+10000,NOW())"
     cursor.execute(consulta)
-    conn.commit()	
+    conn.commit()
     conn.close()
     return (linha)
 
@@ -91,7 +141,7 @@ def gerarProjetosPorAluno(nome):
     consulta = "SELECT nome,cpf,modalidade,orientador,projeto,inicio,fim,id FROM alunos WHERE nome LIKE " + "\"%" + unicode(nome) + "%\" AND cpf!=\"\" AND projeto!=\"\""
     cursor.execute(consulta)
     linhas = cursor.fetchall()
-	
+
     conn.close()
     return (linhas)
 
@@ -161,10 +211,11 @@ def declaracaoOrientador():
 
 @app.route("/cadastrarProjeto", methods=['GET', 'POST'])
 def cadastrarProjeto():
-    pass
+
     #CADASTRAR DADOS DO PROPONENTE
-    tipo = unicode(request.form['tipo'])
+    tipo = int(request.form['tipo'])
     nome = unicode(request.form['nome'])
+    categoria_projeto = int(request.form['categoria_projeto'])
     siape = int(request.form['siape'])
     email = unicode(request.form['email'])
     ua = unicode(request.form['ua'])
@@ -175,27 +226,107 @@ def cadastrarProjeto():
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    consulta = "INSERT INTO editalProjeto (tipo,nome,siape,email,ua,area_capes,grande_area,grupo,data) VALUES (" + "\"" + tipo + "\"," +  "\"" + nome + "\"," + str(siape) + "," + "\"" + email + "\"," + "\"" + ua + "\"," + "\"" + area_capes + "\"," + "\"" + grande_area + "\"," + "\"" + grupo + "\"," + "CURRENT_TIMESTAMP())"
-    cursor.execute(consulta)
-    conn.commit()
+
+    #DADOS PESSOAIS E BÁSICOS DO PROJETO
+    consulta = "INSERT INTO editalProjeto (categoria,tipo,nome,siape,email,ua,area_capes,grande_area,grupo,data) VALUES (" + str(categoria_projeto) + "," + str(tipo) + "," +  "\"" + nome + "\"," + str(siape) + "," + "\"" + email + "\"," + "\"" + ua + "\"," + "\"" + area_capes + "\"," + "\"" + grande_area + "\"," + "\"" + grupo + "\"," + "CURRENT_TIMESTAMP())"
+    #atualizar(consulta)
+    try:
+        cursor.execute(consulta)
+        conn.commit()
+    except MySQLdb.Error, e:
+        conn.rollback()
+        return(str(e))
+
     getID = "SELECT LAST_INSERT_ID()"
     cursor.execute(getID)
     ultimo_id = int(cursor.fetchone()[0])
-    
-    
-    #TODO: CADASTRAR DADOS DO PROJETO
-    '''  
-    arquivo_projeto = request.files['arquivo_projeto']
-    if arquivo_projeto and allowed_file(arquivo_projeto.filename):
-        filename = secure_filename(arquivo_projeto.filename)
-        arquivo_projeto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    elif not allowed_file(arquivo_projeto.filename):
-		return ("Arquivo não permitido")
-    
+    ultimo_id_str = "%03d" % (ultimo_id)
+
+    #CADASTRAR DADOS DO PROJETO
+
+    titulo = unicode(request.form['titulo'])
+    validade = int(request.form['validade'])
+    palavras_chave = unicode(request.form['palavras_chave'])
+    descricao_resumida = unicode(request.form['descricao_resumida'])
+    bolsas = int(request.form['numero_bolsas'])
+    consulta = "UPDATE editalProjeto SET titulo=\"" + titulo + "\", validade=" + str(validade) + ", palavras=\"" + palavras_chave + "\", resumo=\"" + descricao_resumida + "\", bolsas=" + str(bolsas) + " WHERE id=" + str(ultimo_id)
+    atualizar(consulta)
+    codigo = id_generator()
+    if ('arquivo_projeto' in request.files):
+        arquivo_projeto = request.files['arquivo_projeto']
+        if arquivo_projeto and allowed_file(arquivo_projeto.filename) :
+
+            arquivo_projeto.filename = "projeto_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_projeto.filename)
+            arquivo_projeto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_projeto=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+        elif not allowed_file(arquivo_projeto.filename):
+    		return ("Arquivo de projeto não permitido")
+    if ('arquivo_plano1' in request.files):
+
+        arquivo_plano1 = request.files['arquivo_plano1']
+        if arquivo_plano1 and allowed_file(arquivo_plano1.filename):
+            arquivo_plano1.filename = "plano1_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_plano1.filename)
+            arquivo_plano1.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_plano1=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+        elif not allowed_file(arquivo_plano1.filename):
+    		return ("Arquivo de plano 1 de trabalho não permitido")
+
+    if ('arquivo_plano2' in request.files):
+        arquivo_plano2 = request.files['arquivo_plano2']
+        if arquivo_plano2 and allowed_file(arquivo_plano2.filename):
+            arquivo_plano2.filename = "plano2_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_plano2.filename)
+            arquivo_plano2.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_plano2=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+        elif not allowed_file(arquivo_plano2.filename):
+    		return ("Arquivo de plano 2 de trabalho não permitido")
+
+    if ('arquivo_lattes' in request.files):
+        arquivo_lattes = request.files['arquivo_lattes']
+        if arquivo_lattes and allowed_file(arquivo_lattes.filename):
+            arquivo_lattes.filename = str(siape) + "_" + codigo + ".xml"
+            filename = secure_filename(arquivo_lattes.filename)
+            arquivo_lattes.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_lattes=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+        elif not allowed_file(arquivo_lattes.filename):
+    		return ("Arquivo de curriculo lattes não permitido")
+
     #CADASTRAR AVALIADORES SUGERIDOS
-    '''
+    avaliador1_email = unicode(request.form['avaliador1_email'])
+    if avaliador1_email!='':
+        token = id_generator(40)
+        consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador1_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
+        atualizar(consulta)
+
+    avaliador2_email = unicode(request.form['avaliador2_email'])
+    if avaliador2_email!='':
+        token = id_generator(40)
+        consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador2_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
+        atualizar(consulta)
+
+    avaliador3_email = unicode(request.form['avaliador3_email'])
+    if avaliador3_email!='':
+        token = id_generator(40)
+        consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador3_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
+        atualizar(consulta)
+    #ENVIAR E-MAIL DE CONFIRMAÇÃO
+    if enviarEmail(email,u"[CONFIRMACAO] - Cadastro de Projeto de Pesquisa","Seu projeto foi cadastrado com sucesso. IDentificador: " + str(ultimo_id)):
+        return ("E-mail de confirmação enviado com sucesso.<BR>ID do seu projeto: " + str(ultimo_id))
+    else:
+        return("Não foi possível enviar o e-mail de confirmação. Anote o ID de seu projeto: " + str(ultimo_id))
+
     conn.close()
-    return (consulta + "<BR>ID: " + str(ultimo_id) + "<BR>" + str(filename))
-    
+
+
 if __name__ == "__main__":
     app.run()

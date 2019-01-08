@@ -3,109 +3,17 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <title>Cadastro de Projeto de Pesquisa - Edital</title>
-
-    <script>
-
-    var _validFileExtensions = [".pdf",".xml"];
-function ValidateSingleInput(oInput) {
-    if (oInput.type == "file") {
-        var sFileName = oInput.value;
-         if (sFileName.length > 0) {
-            var blnValid = false;
-            for (var j = 0; j < _validFileExtensions.length; j++) {
-                var sCurExtension = _validFileExtensions[j];
-                if (sFileName.substr(sFileName.length - sCurExtension.length, sCurExtension.length).toLowerCase() == sCurExtension.toLowerCase()) {
-                    blnValid = true;
-                    break;
-                }
-            }
-
-            if (!blnValid) {
-                alert("Arquivo inválido! Tipo de arquivo permitido: " + _validFileExtensions.join(", "));
-                oInput.value = "";
-                return false;
-            }
-        }
-    }
-    return true;
-}
-    function tipo_projeto() {
-       var x = document.forms["frmCadastroProjeto"]["tipo"].value;
-
-       if (x == "0") { //Fluxo Continuo
-          document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = true;
-		  document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = true;
-		  document.forms["frmCadastroProjeto"]["numero_bolsas"].disabled = true;
-		}
-		else {
-			document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = false;
-		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = false;
-		    document.forms["frmCadastroProjeto"]["numero_bolsas"].disabled = false;
-		}
-	}
-
-	function categoria_do_projeto() {
-       var x = document.forms["frmCadastroProjeto"]["categoria_projeto"].value;
-
-       if (x == "0") { //Em andamento
-          document.forms["frmCadastroProjeto"]["arquivo_projeto"].disabled = true;
-          document.forms["frmCadastroProjeto"]["arquivo_projeto"].required = false;
-          document.forms["frmCadastroProjeto"]["avaliador1_email"].required = false;
-          document.forms["frmCadastroProjeto"]["avaliador2_email"].required = false;
-          document.forms["frmCadastroProjeto"]["avaliador3_email"].required = false;
-
-		}
-		else { //Projeto Novo
-			document.forms["frmCadastroProjeto"]["arquivo_projeto"].disabled = false;
-                document.forms["frmCadastroProjeto"]["arquivo_projeto"].required = true;
-                document.forms["frmCadastroProjeto"]["avaliador1_email"].required = true;
-                document.forms["frmCadastroProjeto"]["avaliador2_email"].required = true;
-                document.forms["frmCadastroProjeto"]["avaliador3_email"].required = true;
-
-		}
-	}
-
-	function bolsas() {
-
-       var numero_bolsas = parseInt(document.forms["frmCadastroProjeto"]["numero_bolsas"].value,10);
-       if (numero_bolsas==0) {
-		   document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = true;
-		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = true;
-        document.forms["frmCadastroProjeto"]["arquivo_plano1"].required = false;
- 		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].required = false;
-	   }
-	   if (numero_bolsas==1) {
-		   document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = false;
-		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = true;
-        document.forms["frmCadastroProjeto"]["arquivo_plano1"].required = true;
- 		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].required = false;
-	   }
-	   if (numero_bolsas==2) {
-		   document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = false;
-		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = false;
-        document.forms["frmCadastroProjeto"]["arquivo_plano1"].required = true;
- 		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].required = true;
-	   }
-	}
-    </script>
-
   </head>
   <body><br>
     <form name="frmCadastroProjeto" action="/pesquisa/cadastrarProjeto" method="POST"
       enctype="multipart/form-data">
       <h1 style="text-align: center;"> CADASTRAR PROJETO DE PESQUISA</h1>
       <label><b>Tipo de Submissão</b>:
-        <select name="tipo" required="required" onchange="tipo_projeto()">
-          <option value="1">Edital 01/2019/PRPI</option>
-          <option value="0">Fluxo Contínuo</option>
+        <select name="tipo" required="required">
+          <option value="Edital 07/2018/PRPI">Edital 07/2018/PRPI</option>
+          <option value="Fluxo Continuo">Fluxo Contínuo</option>
         </select>
-        <br>
-
-      </label>
-      <label><b>Categoria de projeto</b>:<select name="categoria_projeto" onchange="categoria_do_projeto()">
-          <option value="0">Projeto em andamento</option>
-          <option value="1">Projeto novo</option>
-        </select></label><br>
+      </label><br>
       <h2> Dados pessoais</h2>
       <br>
       <label><b>Nome</b>: <input name="nome" required="required" size="80" type="text"><br>
@@ -192,8 +100,6 @@ function ValidateSingleInput(oInput) {
         <br>
         <b>Grupo de Pesquisa CNPq</b>: <input name="grupo" required="required"
           size="80" type="text"><br>
-          <b>Curriculo Lattes (xml)</b>: <input name="arquivo_lattes"  onchange="ValidateSingleInput(this);" type="file" required="required"><br>
-          <br>
       </label><br>
       <hr><br>
       <h2>Dados do projeto</h2>
@@ -212,33 +118,44 @@ function ValidateSingleInput(oInput) {
         <textarea name="descricao_resumida" cols="130" rows="20" required="required"
 maxlength="15000"></textarea><br>
         <br>
-
-        Arquivo do projeto</b> <b>(pdf)</b>: <input name="arquivo_projeto" onchange="ValidateSingleInput(this);"
+        <b>Introdução/Justificativa</b>:<br>
+        <textarea name="introducao" cols="130" rows="20" required="required" maxlength="15000"></textarea><br>
+      </label> <br>
+      <b>Objetivos</b>: <br>
+      <textarea name="objetivos" cols="130" rows="20" maxlength="15000"></textarea><br>
+      <br>
+      <b>Metodologia</b>: <br>
+      <textarea name="metodologia" cols="130" rows="20" required="required" maxlength="15000"></textarea><br>
+      <br>
+      <b>Referências</b>:<br>
+      <textarea name="referencias" cols="130" rows="20" required="required" maxlength="15000"></textarea><br>
+      <b><br>
+        Arquivo do projeto</b> <b>(pdf)</b>: <input name="arquivo_projeto" required="required"
         type="file"><br>
       <br>
       <hr><br>
       <h2> Planos de Trabalho</h2>
       <label><b>Bolsas solicitadas</b>:
-        <select name="numero_bolsas" required="required" onchange="bolsas()">
+        <select name="numero_bolsas" required="required">
           <option value="0">0</option>
           <option value="1">1</option>
           <option value="2">2</option>
         </select>
         <br>
-        <b>Plano de Trabalho 1 (pdf)</b>: <input name="arquivo_plano1" onchange="ValidateSingleInput(this);"
+        <b>Plano de Trabalho 1 (pdf)</b>: <input name="arquivo_plano1" required="required"
           type="file"><br>
-        <b>Plano de Trabalho 2 (pdf)</b>: <input name="arquivo_plano2"  onchange="ValidateSingleInput(this);" type="file"><br>
+        <b>Plano de Trabalho 2 (pdf)</b>: <input name="arquivo_plano2" type="file"><br>
         <br>
       </label>
       <hr>
-      <h2>Avaliadores sugeridos (indique até 3) (para projetos novos) </h2>
-      <label>
-        <b>E-mail1:</b> <input name="avaliador1_email" size="80" maxlength="80"
+      <h2>Avaliadores sugeridos (indique até 3) (opcional) </h2>
+      <label><b>Nome</b>: <input name="avaliador1" size="80" maxlength="100" type="text"><br>
+        <b>E-mail:</b> <input name="avaliador1_email" size="80" maxlength="80"
           type="email"><br>
-
-        <b>Email2</b>: <input name="avaliador2_email" size="80" maxlength="80" type="email"><br>
-
-        <b>Email3:</b> <input name="avaliador3_email" size="80" maxlength="80" type="email"><br>
+        <b>Nome</b>: <input name="avaliador2" size="80" maxlength="100" type="text"><br>
+        <b>Email</b>: <input name="avaliador2_email" size="80" maxlength="80" type="email"><br>
+        <b>Nome:</b> <input name="avaliador3" size="80" maxlength="100" type="text"><br>
+        <b>Email:</b> <input name="avaliador3_email" size="80" maxlength="80" type="email"><br>
       </label>
       <hr><label><br>
         <br>
