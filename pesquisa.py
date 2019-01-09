@@ -14,10 +14,13 @@ from email.mime.multipart import MIMEMultipart
 from email.MIMEImage import MIMEImage
 from email.mime.text import MIMEText
 import logging
+import sys
+
 
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
+
 
 app = Flask(__name__)
 
@@ -46,8 +49,11 @@ def enviarEmail(to,subject,body):
         server.login(gmail_user, gmail_password)
         server.sendmail(sent_from, to, msg.as_string())
         server.close()
+        logging.debug("E-Mail enviado com sucesso.")
         return (True)
     except:
+        e = sys.exc_info()[0]
+        logging.debug("Erro ao enviar e-mail: " + str(e))
         return (False)
 
 def atualizar(consulta):
@@ -59,6 +65,8 @@ def atualizar(consulta):
         cursor.execute(consulta)
         conn.commit()
     except MySQLdb.Error, e:
+        #e = sys.exc_info()[0]
+        logging.debug(e)
         conn.rollback()
     finally:
         conn.close()
@@ -242,54 +250,32 @@ def cadastrarProjeto():
     cursor.execute(getID)
     ultimo_id = int(cursor.fetchone()[0])
     ultimo_id_str = "%03d" % (ultimo_id)
+    if tipo==0:
+        tipo_str = "Fluxo Continuo"
+    else:
+        tipo_str= "Edital"
 
+    if categoria_projeto==0:
+        categoria_str = "Projeto em andamento"
+    else:
+        categoria_str= "Projeto Novo"
+
+    logging.debug("Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome)
     #CADASTRAR DADOS DO PROJETO
 
     titulo = unicode(request.form['titulo'])
     validade = int(request.form['validade'])
     palavras_chave = unicode(request.form['palavras_chave'])
     descricao_resumida = unicode(request.form['descricao_resumida'])
-    bolsas = int(request.form['numero_bolsas'])
+    if 'numero_bolsas' in request.form:
+        bolsas = int(request.form['numero_bolsas'])
+    else:
+        bolsas = 0
     consulta = "UPDATE editalProjeto SET titulo=\"" + titulo + "\", validade=" + str(validade) + ", palavras=\"" + palavras_chave + "\", resumo=\"" + descricao_resumida + "\", bolsas=" + str(bolsas) + " WHERE id=" + str(ultimo_id)
+    logging.debug("Preparando para atualizar dados do projeto.")
     atualizar(consulta)
+    logging.debug("Dados do projeto cadastrados.")
     codigo = id_generator()
-    if ('arquivo_projeto' in request.files):
-        arquivo_projeto = request.files['arquivo_projeto']
-        if arquivo_projeto and allowed_file(arquivo_projeto.filename) :
-
-            arquivo_projeto.filename = "projeto_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
-            filename = secure_filename(arquivo_projeto.filename)
-            arquivo_projeto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
-            consulta = "UPDATE editalProjeto SET arquivo_projeto=\"" + filename + "\" WHERE id=" + str(ultimo_id)
-            atualizar(consulta)
-        elif not allowed_file(arquivo_projeto.filename):
-    		return ("Arquivo de projeto não permitido")
-    if ('arquivo_plano1' in request.files):
-
-        arquivo_plano1 = request.files['arquivo_plano1']
-        if arquivo_plano1 and allowed_file(arquivo_plano1.filename):
-            arquivo_plano1.filename = "plano1_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
-            filename = secure_filename(arquivo_plano1.filename)
-            arquivo_plano1.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
-            consulta = "UPDATE editalProjeto SET arquivo_plano1=\"" + filename + "\" WHERE id=" + str(ultimo_id)
-            atualizar(consulta)
-        elif not allowed_file(arquivo_plano1.filename):
-    		return ("Arquivo de plano 1 de trabalho não permitido")
-
-    if ('arquivo_plano2' in request.files):
-        arquivo_plano2 = request.files['arquivo_plano2']
-        if arquivo_plano2 and allowed_file(arquivo_plano2.filename):
-            arquivo_plano2.filename = "plano2_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
-            filename = secure_filename(arquivo_plano2.filename)
-            arquivo_plano2.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
-            consulta = "UPDATE editalProjeto SET arquivo_plano2=\"" + filename + "\" WHERE id=" + str(ultimo_id)
-            atualizar(consulta)
-        elif not allowed_file(arquivo_plano2.filename):
-    		return ("Arquivo de plano 2 de trabalho não permitido")
-
     if ('arquivo_lattes' in request.files):
         arquivo_lattes = request.files['arquivo_lattes']
         if arquivo_lattes and allowed_file(arquivo_lattes.filename):
@@ -301,6 +287,57 @@ def cadastrarProjeto():
             atualizar(consulta)
         elif not allowed_file(arquivo_lattes.filename):
     		return ("Arquivo de curriculo lattes não permitido")
+    else:
+        logging.debug("Não foi incluído um arquivo de curriculo")
+    logging.debug("Arquivo lattes cadastrado.")
+
+    if ('arquivo_projeto' in request.files):
+        arquivo_projeto = request.files['arquivo_projeto']
+        if arquivo_projeto and allowed_file(arquivo_projeto.filename) :
+            arquivo_projeto.filename = "projeto_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_projeto.filename)
+            arquivo_projeto.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_projeto=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+            logging.debug("Arquivo de projeto cadastrado.")
+        elif not allowed_file(arquivo_projeto.filename):
+    		return ("Arquivo de projeto não permitido")
+    else:
+        logging.debug("Não foi incluído um arquivo de projeto")
+
+
+    if ('arquivo_plano1' in request.files):
+
+        arquivo_plano1 = request.files['arquivo_plano1']
+        if arquivo_plano1 and allowed_file(arquivo_plano1.filename):
+            arquivo_plano1.filename = "plano1_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_plano1.filename)
+            arquivo_plano1.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_plano1=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+            logging.debug("Arquivo Plano 1 cadastrado.")
+        elif not allowed_file(arquivo_plano1.filename):
+    		return ("Arquivo de plano 1 de trabalho não permitido")
+    else:
+        logging.debug("Não foi incluído um arquivo de plano 1")
+
+
+    if ('arquivo_plano2' in request.files):
+        arquivo_plano2 = request.files['arquivo_plano2']
+        if arquivo_plano2 and allowed_file(arquivo_plano2.filename):
+            arquivo_plano2.filename = "plano2_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_plano2.filename)
+            arquivo_plano2.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_plano2=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+            logging.debug("Arquivo Plano 2 cadastrado.")
+        elif not allowed_file(arquivo_plano2.filename):
+    		return ("Arquivo de plano 2 de trabalho não permitido")
+    else:
+        logging.debug("Não foi incluído um arquivo de plano 2")
 
     #CADASTRAR AVALIADORES SUGERIDOS
     avaliador1_email = unicode(request.form['avaliador1_email'])
@@ -320,12 +357,14 @@ def cadastrarProjeto():
         token = id_generator(40)
         consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador3_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
         atualizar(consulta)
+    logging.debug("Avaliadores sugeriddos cadastrados.")
     #ENVIAR E-MAIL DE CONFIRMAÇÃO
-    if enviarEmail(email,u"[CONFIRMACAO] - Cadastro de Projeto de Pesquisa","Seu projeto foi cadastrado com sucesso. IDentificador: " + str(ultimo_id)):
+    Texto_email = "Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome
+    if enviarEmail(email,u"[PIICT - CONFIRMACAO] - Cadastro de Projeto de Pesquisa",Texto_email):
         return ("E-mail de confirmação enviado com sucesso.<BR>ID do seu projeto: " + str(ultimo_id))
     else:
         return("Não foi possível enviar o e-mail de confirmação. Anote o ID de seu projeto: " + str(ultimo_id))
-
+    logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado com sucesso.")
     conn.close()
 
 

@@ -33,11 +33,12 @@ function ValidateSingleInput(oInput) {
        var x = document.forms["frmCadastroProjeto"]["tipo"].value;
 
        if (x == "0") { //Fluxo Continuo
-          document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = true;
-		  document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = true;
-		  document.forms["frmCadastroProjeto"]["numero_bolsas"].disabled = true;
-		}
-		else {
+            document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = true;
+		        document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = true;
+            document.forms["frmCadastroProjeto"]["numero_bolsas"].value = 0;
+		        document.forms["frmCadastroProjeto"]["numero_bolsas"].disabled = true;
+		    }
+		else { //Edital
 			document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = false;
 		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = false;
 		    document.forms["frmCadastroProjeto"]["numero_bolsas"].disabled = false;
@@ -87,10 +88,18 @@ function ValidateSingleInput(oInput) {
  		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].required = true;
 	   }
 	}
+
+  function iniciar() {
+
+    tipo_projeto();
+    categoria_do_projeto();
+    bolsas();
+
+  }
     </script>
 
   </head>
-  <body><br>
+  <body onload="iniciar()"><br>
     <form name="frmCadastroProjeto" action="/pesquisa/cadastrarProjeto" method="POST"
       enctype="multipart/form-data">
       <h1 style="text-align: center;"> CADASTRAR PROJETO DE PESQUISA</h1>
@@ -203,7 +212,7 @@ function ValidateSingleInput(oInput) {
         <select name="validade" required="required">
           <option value="1">1</option>
           <option value="2">2</option>
-          <option value="3">3</option>
+          <option value="3" selected>3</option>
         </select>
         <br>
         <b>Palavras chave</b>:<input name="palavras_chave" required="required" size="80"
@@ -231,7 +240,8 @@ maxlength="15000"></textarea><br>
         <br>
       </label>
       <hr>
-      <h2>Avaliadores sugeridos (indique até 3) (para projetos novos) </h2>
+      <h2>Avaliadores externos sugeridos (indique 3)</h2>
+      <h5><i>Com título de doutor, preferencialmente bolsista de produtividade.</i></h5>
       <label>
         <b>E-mail1:</b> <input name="avaliador1_email" size="80" maxlength="80"
           type="email"><br>
