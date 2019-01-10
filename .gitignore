@@ -5,3 +5,7 @@
 *.sh
 *.sql
 *.log
+*.db
+*.tar.gz
+*.zip
+*.sqlite3

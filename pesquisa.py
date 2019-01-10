@@ -15,12 +15,13 @@ from email.MIMEImage import MIMEImage
 from email.mime.text import MIMEText
 import logging
 import sys
-
+import xml.etree.ElementTree as ET
+from modules import scoreLattes as SL
 
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
-
+CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/files/'
 
 app = Flask(__name__)
 
@@ -275,6 +276,7 @@ def cadastrarProjeto():
     logging.debug("Preparando para atualizar dados do projeto.")
     atualizar(consulta)
     logging.debug("Dados do projeto cadastrados.")
+    arquivo_curriculo_lattes = ""
     codigo = id_generator()
     if ('arquivo_lattes' in request.files):
         arquivo_lattes = request.files['arquivo_lattes']
@@ -284,6 +286,7 @@ def cadastrarProjeto():
             arquivo_lattes.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
             consulta = "UPDATE editalProjeto SET arquivo_lattes=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            arquivo_curriculo_lattes = filename
             atualizar(consulta)
         elif not allowed_file(arquivo_lattes.filename):
     		return ("Arquivo de curriculo lattes não permitido")
@@ -358,14 +361,39 @@ def cadastrarProjeto():
         consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador3_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
         atualizar(consulta)
     logging.debug("Avaliadores sugeriddos cadastrados.")
+
+    #CALCULANDO scorelattes
+    pontuacao = -100
+    try:
+        logging.debug("Iniciando o cálculo do scorelattes...")
+        tree = ET.parse(CURRICULOS_DIR + arquivo_curriculo_lattes)
+        root = tree.getroot()
+        score = SL.Score(root,2014, 2018, area_capes, 2016)
+        pontuacao = score.get_score()
+        logging.debug("Calculo do scorelattes finalizado com sucesso.")
+    except:
+        e = sys.exc_info()[0]
+        logging.debug(e)
+        pontuacao = -1
+        logging.debug("Calculo do scorelattes NAO finalizado.")
+
+    try:
+        consulta = "UPDATE editalProjeto SET scorelattes=" + str(pontuacao) + " WHERE id=" + str(ultimo_id)
+        atualizar(consulta)
+        logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado com sucesso.")
+    except:
+        e = sys.exc_info()[0]
+        logging.debug(e)
+        logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram.")
+    finally:
+        conn.close()
+
     #ENVIAR E-MAIL DE CONFIRMAÇÃO
     Texto_email = "Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome
     if enviarEmail(email,u"[PIICT - CONFIRMACAO] - Cadastro de Projeto de Pesquisa",Texto_email):
         return ("E-mail de confirmação enviado com sucesso.<BR>ID do seu projeto: " + str(ultimo_id))
     else:
         return("Não foi possível enviar o e-mail de confirmação. Anote o ID de seu projeto: " + str(ultimo_id))
-    logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado com sucesso.")
-    conn.close()
 
 
 if __name__ == "__main__":
