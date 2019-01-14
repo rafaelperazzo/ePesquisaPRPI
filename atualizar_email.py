@@ -36,7 +36,7 @@ def id_generator(size=20, chars=string.ascii_uppercase + string.digits + string.
 conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
 conn.select_db('pesquisa')
 cursor  = conn.cursor()
-consulta = "SELECT docente,siape FROM docentes WHERE email is null ORDER BY docente"
+consulta = "SELECT docente,siape FROM docentes WHERE email is null ORDER BY docente DESC"
 cursor.execute(consulta)
 linhas = cursor.fetchall()
 continua = True
@@ -55,6 +55,7 @@ for linha in linhas:
                 is_valid = validate_email(email,verify=True)
                 if is_valid:
                     logging.debug("Atualizando e-mail: " + email)
+		    print("Atualizando e-mail: " + email)
                     consulta_update = "UPDATE docentes SET email=\"" + email + "\" WHERE siape=" + str(siape)
                     atualizar(consulta_update)
                     continua = False

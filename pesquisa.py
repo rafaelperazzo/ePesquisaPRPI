@@ -395,6 +395,39 @@ def cadastrarProjeto():
     else:
         return("Não foi possível enviar o e-mail de confirmação. Anote o ID de seu projeto: " + str(ultimo_id))
 
+@app.route("/score", methods=['GET', 'POST'])
+def getScoreLattesFromFile():
+    codigo = id_generator()
+    arquivo_curriculo_lattes = ""
+    area_capes = unicode(request.form['area_capes'])
+    if ('arquivo_lattes' in request.files):
+        arquivo_lattes = request.files['arquivo_lattes']
+        if arquivo_lattes and allowed_file(arquivo_lattes.filename):
+            arquivo_lattes.filename = "000_CONSULTA" + "_" + codigo + ".xml"
+            filename = secure_filename(arquivo_lattes.filename)
+            arquivo_lattes.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+
+            arquivo_curriculo_lattes = filename
+
+        elif not allowed_file(arquivo_lattes.filename):
+    		return ("Arquivo de curriculo lattes não permitido")
+    else:
+        return("Não foi incluído um arquivo de curriculo")
+
+    #CALCULANDO scorelattes
+    pontuacao = -100
+    try:
+        tree = ET.parse(CURRICULOS_DIR + arquivo_curriculo_lattes)
+        root = tree.getroot()
+        score = SL.Score(root,2014, 2018, area_capes, 2016)
+        pontuacao = score.get_score()
+        return("Sua pontuacao: " + str(pontuacao))
+    except:
+        e = sys.exc_info()[0]
+        logging.debug(e)
+        pontuacao = -1
+        return("Erro ao calcular pontuacao!")
 
 if __name__ == "__main__":
     app.run()
