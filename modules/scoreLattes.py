@@ -810,77 +810,81 @@ class Score(object):
         return self.__score
 
     def sumario(self):
-        print self.__nome_completo.encode("utf-8")
-        print "ID Lattes: " + self.__numero_identificador
-        print "Área de avaliação: " + self.__area
-        print "POS-DOUTORADO:                       ".decode("utf8") + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['POS-DOUTORADO']).encode("utf-8")
-        print "LIVRE-DOCENCIA:                      ".decode("utf8") + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['LIVRE-DOCENCIA']).encode("utf-8")
-        print "DOUTORADO:                           ".decode("utf8") + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['DOUTORADO']).encode("utf-8")
-        print "MESTRADO:                            ".decode("utf8") + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['MESTRADO']).encode("utf-8")
+        resultado = ""
+        #resultado = resultado +  self.__nome_completo.encode("utf-8")
+        resultado = resultado +  "ID Lattes: " + self.__numero_identificador + "<BR>"
+        resultado = resultado +  u"Área de avaliação: " + self.__area + "<BR>"
+        resultado = resultado +  "POS-DOUTORADO:                       " + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['POS-DOUTORADO']) + "<BR>"
 
-        print "PROJETO-DE-PESQUISA:                 ".decode("utf8") + str(self.__tabela_de_qualificacao['PROJETO-DE-PESQUISA']['PESQUISA']).encode("utf-8")
-        print "PROJETO-DE-DESENVOLVIMENTO:          ".decode("utf8") + str(self.__tabela_de_qualificacao['PROJETO-DE-PESQUISA']['DESENVOLVIMENTO']).encode("utf-8")
+        resultado = resultado +  "LIVRE-DOCENCIA:                      "  + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['LIVRE-DOCENCIA'])  + "<BR>"
+        resultado = resultado +  "DOUTORADO:                           "  + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['DOUTORADO'])  + "<BR>"
+        resultado = resultado +  "MESTRADO:                            "  + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['MESTRADO'])  + "<BR>"
 
-        print "ARTIGOS-PUBLICADOS-QUALIS-A1:        ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['A1']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-QUALIS-A2:        ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['A2']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-QUALIS-B1:        ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B1']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-QUALIS-B2:        ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B2']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-QUALIS-B3:        ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B3']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-QUALIS-B4:        ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B4']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-QUALIS-B5:        ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B5']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-QUALIS-C:         ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['C']).encode("utf-8")
-        print "ARTIGOS-PUBLICADOS-SEM-QUALIS:       ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['NAO-ENCONTRADO']).encode("utf-8")
+        resultado = resultado +  "PROJETO-DE-PESQUISA:                 "  + str(self.__tabela_de_qualificacao['PROJETO-DE-PESQUISA']['PESQUISA'])  + "<BR>"
+        resultado = resultado +  "PROJETO-DE-DESENVOLVIMENTO:          "  + str(self.__tabela_de_qualificacao['PROJETO-DE-PESQUISA']['DESENVOLVIMENTO'])  + "<BR>"
 
-        print "TRABALHOS-COMPLETOS-INTERNACIONAIS:  ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['INTERNACIONAL']['COMPLETO']).encode("utf-8")
-        print "TRABALHOS-COMPLETOS-NACIONAIS:       ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NACIONAL']['COMPLETO']).encode("utf-8")
-        print "TRABALHOS-COMPLETOS-REGIONAIS:       ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['REGIONAL']['COMPLETO']).encode("utf-8")
-        print "TRABALHOS-COMPLETOS-LOCAIS:          ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['LOCAL']['COMPLETO']).encode("utf-8")
-        print "TRABALHOS-COMPLETOS-NAO-INFORMADO:   ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NAO_INFORMADO']['COMPLETO']).encode("utf-8")
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-A1:        "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['A1'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-A2:        "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['A2'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-B1:        "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B1'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-B2:        "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B2'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-B3:        "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B3'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-B4:        "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B4'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-B5:        "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['B5'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-QUALIS-C:         "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['C'])  + "<BR>"
+        resultado = resultado +  "ARTIGOS-PUBLICADOS-SEM-QUALIS:       "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['ARTIGOS-PUBLICADOS']['NAO-ENCONTRADO']) + "<BR>"
 
-        print "TRABALHOS-EXPANDIDOS-INTERNACIONAIS: ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['INTERNACIONAL']['RESUMO_EXPANDIDO']).encode("utf-8")
-        print "TRABALHOS-EXPANDIDOS-NACIONAIS:      ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NACIONAL']['RESUMO_EXPANDIDO']).encode("utf-8")
-        print "TRABALHOS-EXPANDIDOS-REGIONAIS:      ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['REGIONAL']['RESUMO_EXPANDIDO']).encode("utf-8")
-        print "TRABALHOS-EXPANDIDOS-LOCAIS:         ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['LOCAL']['RESUMO_EXPANDIDO']).encode("utf-8")
-        print "TRABALHOS-EXPANDIDOS-NAO-INFORMADO:  ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NAO_INFORMADO']['RESUMO_EXPANDIDO']).encode("utf-8")
+        resultado = resultado +  "TRABALHOS-COMPLETOS-INTERNACIONAIS:  "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['INTERNACIONAL']['COMPLETO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-COMPLETOS-NACIONAIS:       "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NACIONAL']['COMPLETO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-COMPLETOS-REGIONAIS:       "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['REGIONAL']['COMPLETO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-COMPLETOS-LOCAIS:          "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['LOCAL']['COMPLETO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-COMPLETOS-NAO-INFORMADO:   "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NAO_INFORMADO']['COMPLETO'])  + "<BR>"
 
-        print "TRABALHOS-RESUMOS-INTERNACIONAIS:    ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['INTERNACIONAL']['RESUMO']).encode("utf-8")
-        print "TRABALHOS-RESUMOS-NACIONAIS:         ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NACIONAL']['RESUMO']).encode("utf-8")
-        print "TRABALHOS-RESUMOS-REGIONAIS:         ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['REGIONAL']['RESUMO']).encode("utf-8")
-        print "TRABALHOS-RESUMOS-LOCAIS:            ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['LOCAL']['RESUMO']).encode("utf-8")
-        print "TRABALHOS-RESUMOS-NAO-INFORMADO:     ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NAO_INFORMADO']['RESUMO']).encode("utf-8")
+        resultado = resultado +  "TRABALHOS-EXPANDIDOS-INTERNACIONAIS: "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['INTERNACIONAL']['RESUMO_EXPANDIDO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-EXPANDIDOS-NACIONAIS:      "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NACIONAL']['RESUMO_EXPANDIDO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-EXPANDIDOS-REGIONAIS:      "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['REGIONAL']['RESUMO_EXPANDIDO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-EXPANDIDOS-LOCAIS:         "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['LOCAL']['RESUMO_EXPANDIDO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-EXPANDIDOS-NAO-INFORMADO:  "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NAO_INFORMADO']['RESUMO_EXPANDIDO'])  + "<BR>"
 
-        print "LIVROS-PUBLICADOS:                   ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['LIVROS-E-CAPITULOS']['LIVRO-PUBLICADO-OU-ORGANIZADO']['LIVRO_PUBLICADO']).encode("utf-8")
-        print "LIVROS-ORGANIZADOS:                  ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['LIVROS-E-CAPITULOS']['LIVRO-PUBLICADO-OU-ORGANIZADO']['LIVRO_ORGANIZADO_OU_EDICAO']).encode("utf-8")
-        print "CAPITULO-DE-LIVRO-PUBLICADO:         ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['LIVROS-E-CAPITULOS']['CAPITULO-DE-LIVRO-PUBLICADO']).encode("utf-8")
+        resultado = resultado +  "TRABALHOS-RESUMOS-INTERNACIONAIS:    "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['INTERNACIONAL']['RESUMO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-RESUMOS-NACIONAIS:         "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NACIONAL']['RESUMO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-RESUMOS-REGIONAIS:         "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['REGIONAL']['RESUMO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-RESUMOS-LOCAIS:            "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['LOCAL']['RESUMO'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-RESUMOS-NAO-INFORMADO:     "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['TRABALHOS-EM-EVENTOS']['NAO_INFORMADO']['RESUMO'])  + "<BR>"
 
-        print "TRADUCOES:                           ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA']['TRADUCAO']).encode("utf-8")
+        resultado = resultado +  "LIVROS-PUBLICADOS:                   "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['LIVROS-E-CAPITULOS']['LIVRO-PUBLICADO-OU-ORGANIZADO']['LIVRO_PUBLICADO'])  + "<BR>"
+        resultado = resultado +  "LIVROS-ORGANIZADOS:                  "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['LIVROS-E-CAPITULOS']['LIVRO-PUBLICADO-OU-ORGANIZADO']['LIVRO_ORGANIZADO_OU_EDICAO']) + "<BR>"
+        resultado = resultado +  "CAPITULO-DE-LIVRO-PUBLICADO:         "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['LIVROS-E-CAPITULOS']['CAPITULO-DE-LIVRO-PUBLICADO'])  + "<BR>"
 
-        print "SOFTWARES:                           ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['SOFTWARE']).encode("utf-8")
-        print "PATENTES-DEPOSITADAS:                ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PATENTE']['DEPOSITADA']).encode("utf-8")
-        print "PATENTES-CONCEDIDAS:                 ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PATENTE']['CONCEDIDA']).encode("utf-8")
-        print "PRODUTOS-TECNOLOGICOS:               ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PRODUTO-TECNOLOGICO']).encode("utf-8")
-        print "PROCESSOS-OU-TECNICAS:               ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PROCESSOS-OU-TECNICAS']).encode("utf-8")
-        print "TRABALHOS-TECNICOS:                  ".decode("utf8") + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['TRABALHO-TECNICO']).encode("utf-8")
+        resultado = resultado +  "TRADUCOES:                           "  + str(self.__tabela_de_qualificacao['PRODUCAO-BIBLIOGRAFICA']['DEMAIS-TIPOS-DE-PRODUCAO-BIBLIOGRAFICA']['TRADUCAO'])  + "<BR>"
 
-        print "APRESENTACAO-DE-OBRA-ARTISTICA:      ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['APRESENTACAO-DE-OBRA-ARTISTICA']).encode("utf-8")
-        print "COMPOSICAO-MUSICAL:                  ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['COMPOSICAO-MUSICAL']).encode("utf-8")
-        print "OBRA-DE-ARTES-VISUAIS:               ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['OBRA-DE-ARTES-VISUAIS']).encode("utf-8")
+        resultado = resultado +  "SOFTWARES:                           "  + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['SOFTWARE'])  + "<BR>"
+        resultado = resultado +  "PATENTES-DEPOSITADAS:                "  + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PATENTE']['DEPOSITADA'])  + "<BR>"
+        resultado = resultado +  "PATENTES-CONCEDIDAS:                 "  + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PATENTE']['CONCEDIDA'])  + "<BR>"
+        resultado = resultado +  "PRODUTOS-TECNOLOGICOS:               "  + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PRODUTO-TECNOLOGICO'])  + "<BR>"
+        resultado = resultado +  "PROCESSOS-OU-TECNICAS:               "  + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['PROCESSOS-OU-TECNICAS'])  + "<BR>"
+        resultado = resultado +  "TRABALHOS-TECNICOS:                  "  + str(self.__tabela_de_qualificacao['PRODUCAO-TECNICA']['TRABALHO-TECNICO'])  + "<BR>"
 
-
-        print "ORIENTACOES-PARA-POS-DOUTORADO:      ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO']).encode("utf-8")
-        print "ORIENTACOES-PARA-DOUTORADO:          ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO']['ORIENTADOR_PRINCIPAL']).encode("utf-8")
-        print "ORIENTACOES-PARA-MESTRADO:           ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-MESTRADO']['ORIENTADOR_PRINCIPAL']).encode("utf-8")
-        print "CO-ORIENTACOES-PARA-DOUTORADO:       ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO']['CO_ORIENTADOR']).encode("utf-8")
-        print "CO-ORIENTACOES-PARA-MESTRADO:        ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-MESTRADO']['CO_ORIENTADOR']).encode("utf-8")
+        resultado = resultado +  "APRESENTACAO-DE-OBRA-ARTISTICA:      "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['APRESENTACAO-DE-OBRA-ARTISTICA'])  + "<BR>"
+        resultado = resultado +  "COMPOSICAO-MUSICAL:                  "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['COMPOSICAO-MUSICAL'])  + "<BR>"
+        resultado = resultado +  "OBRA-DE-ARTES-VISUAIS:               "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['OBRA-DE-ARTES-VISUAIS'])  + "<BR>"
 
 
-        print "ORIENTACOES-DE-ESPECIALIZACAO:       ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO']).encode("utf-8")
-        print "ORIENTACOES-DE-TCC:                  ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO']).encode("utf-8")
-        print "ORIENTACOES-DE-INICIACAO-CIENTIFICA: ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['INICIACAO_CIENTIFICA']).encode("utf-8")
-        print "ORIENTACOES-DE-OUTRA-NATUREZA:       ".decode("utf8") + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['ORIENTACAO-DE-OUTRA-NATUREZA']).encode("utf-8")
+        resultado = resultado +  "ORIENTACOES-PARA-POS-DOUTORADO:      "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO'])  + "<BR>"
+        resultado = resultado +  "ORIENTACOES-PARA-DOUTORADO:          "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO']['ORIENTADOR_PRINCIPAL'])  + "<BR>"
+        resultado = resultado +  "ORIENTACOES-PARA-MESTRADO:           "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-MESTRADO']['ORIENTADOR_PRINCIPAL'])  + "<BR>"
+        resultado = resultado +  "CO-ORIENTACOES-PARA-DOUTORADO:       "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-DOUTORADO']['CO_ORIENTADOR'])  + "<BR>"
+        resultado = resultado +  "CO-ORIENTACOES-PARA-MESTRADO:        "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['ORIENTACOES-CONCLUIDAS-PARA-MESTRADO']['CO_ORIENTADOR'])  + "<BR>"
 
-        print "TOTAL:                               ".decode("utf8") + str(self.__score).encode("utf-8")
-        print ''
+
+        resultado = resultado +  "ORIENTACOES-DE-ESPECIALIZACAO:       "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['MONOGRAFIA_DE_CONCLUSAO_DE_CURSO_APERFEICOAMENTO_E_ESPECIALIZACAO'])  + "<BR>"
+        resultado = resultado +  "ORIENTACOES-DE-TCC:                  "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['TRABALHO_DE_CONCLUSAO_DE_CURSO_GRADUACAO'])  + "<BR>"
+        resultado = resultado +  "ORIENTACOES-DE-INICIACAO-CIENTIFICA: "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['INICIACAO_CIENTIFICA'])  + "<BR>"
+        resultado = resultado +  "ORIENTACOES-DE-OUTRA-NATUREZA:       "  + str(self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['ORIENTACOES-CONCLUIDAS']['OUTRAS-ORIENTACOES-CONCLUIDAS']['ORIENTACAO-DE-OUTRA-NATUREZA'])  + "<BR>"
+
+        resultado = resultado +  "TOTAL:                               "  + str(self.__score)  + "<BR>"
+        resultado = resultado +  "<BR>"
+        
+        return (resultado)
 '''
 def main():
     # Define program arguments

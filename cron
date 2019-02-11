@@ -1,1 +1,1 @@
-*/5 * * * * rm -f /home/perazzo/flask/projetos/pesquisa/static/pdf/*.pdf
+*/5 * * * * rm -f /home/perazzo/flask/projetos/pesquisa/static/pdf/*.xml

@@ -21,11 +21,12 @@ from modules import scoreLattes as SL
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
-CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/files/'
+CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/pdf/'
 
 app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['CURRICULOS_FOLDER'] = CURRICULOS_DIR
 ## TODO: Preparar o log geral
 logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
 
@@ -405,8 +406,8 @@ def getScoreLattesFromFile():
         if arquivo_lattes and allowed_file(arquivo_lattes.filename):
             arquivo_lattes.filename = "000_CONSULTA" + "_" + codigo + ".xml"
             filename = secure_filename(arquivo_lattes.filename)
-            arquivo_lattes.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            arquivo_lattes.save(os.path.join(app.config['CURRICULOS_FOLDER'], filename))
+            caminho = str(app.config['CURRICULOS_FOLDER'] + "/" + filename)
 
             arquivo_curriculo_lattes = filename
 
@@ -420,9 +421,10 @@ def getScoreLattesFromFile():
     try:
         tree = ET.parse(CURRICULOS_DIR + arquivo_curriculo_lattes)
         root = tree.getroot()
-        score = SL.Score(root,2014, 2018, area_capes, 2016)
+        score = SL.Score(root,2014, 2019, area_capes, 2016)
         pontuacao = score.get_score()
-        return("Sua pontuacao: " + str(pontuacao))
+        sumario = score.sumario()
+        return("Sua pontuacao: " + str(pontuacao) + "<BR>" + sumario)
     except:
         e = sys.exc_info()[0]
         logging.debug(e)
