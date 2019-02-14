@@ -28,7 +28,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['CURRICULOS_FOLDER'] = CURRICULOS_DIR
 ## TODO: Preparar o log geral
-logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
+logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(asctime)s %(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
 
 #Obtendo senhas
 lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
@@ -429,7 +429,7 @@ def getScoreLattesFromFile():
         e = sys.exc_info()[0]
         logging.debug(e)
         pontuacao = -1
-        return("Erro ao calcular pontuacao!")
+        return("Erro ao calcular pontuacao! Favor, comunicar para o e-mail: atendimento.prpi@ufca.edu.br")
 
 if __name__ == "__main__":
     app.run()
