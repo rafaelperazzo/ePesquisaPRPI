@@ -813,7 +813,7 @@ class Score(object):
         resultado = ""
         resultado = resultado +  self.__nome_completo.encode("utf-8") + "<BR>"
         resultado = resultado +  "ID Lattes: " + self.__numero_identificador + "<BR>"
-        resultado = resultado +  u"Área de avaliação: " + self.__area + "<BR>"
+        resultado = resultado +  "Area de avaliacao: " + self.__area + "<BR>"
         resultado = resultado +  "POS-DOUTORADO:                       " + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['POS-DOUTORADO']) + "<BR>"
 
         resultado = resultado +  "LIVRE-DOCENCIA:                      "  + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['LIVRE-DOCENCIA'])  + "<BR>"

@@ -377,14 +377,14 @@ def cadastrarProjeto():
     logging.debug("Avaliadores sugeridos cadastrados.")
 
     #CALCULANDO scorelattes
-    '''
+
     pontuacao = -100
+    sumario = "---"
     try:
         logging.debug("Iniciando o cálculo do scorelattes...")
-        tree = ET.parse(CURRICULOS_DIR + arquivo_curriculo_lattes)
-        root = tree.getroot()
-        score = SL.Score(root,2014, 2018, area_capes, 2016)
-        pontuacao = score.get_score()
+        s = calcularScoreLattes(0,area_capes,"2014","2019",CURRICULOS_DIR + arquivo_curriculo_lattes)
+        pontuacao = float(s)
+        sumario = calcularScoreLattes(1,area_capes,"2014","2019",CURRICULOS_DIR + arquivo_curriculo_lattes)
         logging.debug("Calculo do scorelattes finalizado com sucesso.")
     except:
         e = sys.exc_info()[0]
@@ -403,11 +403,13 @@ def cadastrarProjeto():
         logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram.")
     finally:
         conn.close()
-    '''
-    conn.close()
+
+    #conn.close()
     logging.debug(CURRICULOS_DIR + arquivo_curriculo_lattes)
     #ENVIAR E-MAIL DE CONFIRMAÇÃO
     Texto_email = "Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome
+    #Texto_email = Texto_email + "\nTitulo: " + unicode(titulo) + "\n"
+    #Texto_email = Texto_email + "\nPontuacao Lattes: " + str(pontuacao)
     if enviarEmail(email,u"[PIICT - CONFIRMACAO] - Cadastro de Projeto de Pesquisa",Texto_email):
         return ("E-mail de confirmação enviado com sucesso.<BR>ID do seu projeto: " + str(ultimo_id))
     else:
