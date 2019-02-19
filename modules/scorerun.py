@@ -22,13 +22,13 @@
 #
 
 import sys, time, codecs, re, argparse, csv, requests, os
-#import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 from unidecode import unidecode
 from datetime import date
 
-#from Weights import weights
-#from Bounds import bounds
+from Weights import weights
+from Bounds import bounds
 
 WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/modules/'
 
@@ -811,7 +811,7 @@ class Score(object):
 
     def sumario(self):
         resultado = ""
-        #resultado = resultado +  self.__nome_completo.encode("utf-8")
+        resultado = resultado +  self.__nome_completo.encode("utf-8") + "<BR>"
         resultado = resultado +  "ID Lattes: " + self.__numero_identificador + "<BR>"
         resultado = resultado +  u"Área de avaliação: " + self.__area + "<BR>"
         resultado = resultado +  "POS-DOUTORADO:                       " + str(self.__tabela_de_qualificacao['FORMACAO-ACADEMICA-TITULACAO']['POS-DOUTORADO']) + "<BR>"
@@ -883,9 +883,9 @@ class Score(object):
 
         resultado = resultado +  "TOTAL:                               "  + str(self.__score)  + "<BR>"
         resultado = resultado +  "<BR>"
-        
+
         return (resultado)
-'''
+
 def main():
     # Define program arguments
     parser = argparse.ArgumentParser(description="Computes scores from Lattes curricula.")
@@ -923,4 +923,3 @@ def main():
 # Main
 if __name__ == "__main__":
     sys.exit(main())
-'''

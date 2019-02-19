@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
 from flask import Flask
 from flask import render_template
 from flask import request,url_for,send_file,send_from_directory,redirect,flash
@@ -21,7 +22,7 @@ from modules import scoreLattes as SL
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
-CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/pdf/'
+CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/files/'
 
 app = Flask(__name__)
 
@@ -34,6 +35,15 @@ logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(as
 lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
 PASSWORD = lines[0]
 GMAIL_PASSWORD = lines[1]
+
+
+def calcularScoreLattes(area,since,until,arquivo):
+
+    pasta = "/home/perazzo/flask/projetos/pesquisa/modules/"
+    command = "python " + pasta + "scorerun.py -v -p 2016 -s " +  since + " -u " + until + " \"" + area + "\" " +  arquivo
+    s = os.popen(command).read()
+    return (s)
+
 
 def enviarEmail(to,subject,body):
     gmail_user = 'pesquisa.prpi@ufca.edu.br'
@@ -361,9 +371,10 @@ def cadastrarProjeto():
         token = id_generator(40)
         consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador3_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
         atualizar(consulta)
-    logging.debug("Avaliadores sugeriddos cadastrados.")
+    logging.debug("Avaliadores sugeridos cadastrados.")
 
     #CALCULANDO scorelattes
+    '''
     pontuacao = -100
     try:
         logging.debug("Iniciando o cálculo do scorelattes...")
@@ -375,6 +386,7 @@ def cadastrarProjeto():
     except:
         e = sys.exc_info()[0]
         logging.debug(e)
+        logging.debug(CURRICULOS_DIR + arquivo_curriculo_lattes)
         pontuacao = -1
         logging.debug("Calculo do scorelattes NAO finalizado.")
 
@@ -388,7 +400,9 @@ def cadastrarProjeto():
         logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram.")
     finally:
         conn.close()
-
+    '''
+    conn.close()
+    logging.debug(CURRICULOS_DIR + arquivo_curriculo_lattes)
     #ENVIAR E-MAIL DE CONFIRMAÇÃO
     Texto_email = "Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome
     if enviarEmail(email,u"[PIICT - CONFIRMACAO] - Cadastro de Projeto de Pesquisa",Texto_email):
@@ -419,12 +433,20 @@ def getScoreLattesFromFile():
     #CALCULANDO scorelattes
     pontuacao = -100
     try:
+        '''
         tree = ET.parse(CURRICULOS_DIR + arquivo_curriculo_lattes)
         root = tree.getroot()
         score = SL.Score(root,2014, 2019, area_capes, 2016)
         pontuacao = score.get_score()
         sumario = score.sumario()
-        return("Sua pontuacao: " + str(pontuacao) + "<BR>" + sumario)
+        '''
+        #pasta = "/home/perazzo/flask/projetos/pesquisa/modules/"
+        #xmls = "/home/perazzo/flask/projetos/pesquisa/static/files/"
+        #command = "python " + pasta + "scorerun.py -v -p 2016 -s 2014 -u 2019 " + "\"" + area_capes + "\" " +  CURRICULOS_DIR + arquivo_curriculo_lattes
+        #s = os.popen(command).read()
+        s = calcularScoreLattes(area_capes,"2014","2019",CURRICULOS_DIR + arquivo_curriculo_lattes)
+        #return("Sua pontuacao: " + str(pontuacao) + "<BR>" + sumario)
+        return(s)
     except:
         e = sys.exc_info()[0]
         logging.debug(e)
