@@ -2,7 +2,7 @@
 #https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
 from flask import Flask
 from flask import render_template
-from flask import request,url_for,send_file,send_from_directory,redirect,flash
+from flask import request,url_for,send_file,send_from_directory,redirect,flash,Markup
 import datetime
 import sqlite3
 import MySQLdb
@@ -23,6 +23,7 @@ UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
 CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/files/'
+SITE = "https://programacao.ufca.edu.br/pesquisa/static/files/"
 
 app = Flask(__name__)
 
@@ -404,16 +405,19 @@ def cadastrarProjeto():
     finally:
         conn.close()
 
-    #conn.close()
-    logging.debug(CURRICULOS_DIR + arquivo_curriculo_lattes)
-    #ENVIAR E-MAIL DE CONFIRMAÇÃO
-    Texto_email = "Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome
-    #Texto_email = Texto_email + "\nTitulo: " + unicode(titulo) + "\n"
-    #Texto_email = Texto_email + "\nPontuacao Lattes: " + str(pontuacao)
-    if enviarEmail(email,u"[PIICT - CONFIRMACAO] - Cadastro de Projeto de Pesquisa",Texto_email):
-        return ("E-mail de confirmação enviado com sucesso.<BR>ID do seu projeto: " + str(ultimo_id))
-    else:
-        return("Não foi possível enviar o e-mail de confirmação. Anote o ID de seu projeto: " + str(ultimo_id))
+    try:
+        #ENVIAR E-MAIL DE CONFIRMAÇÃO
+        Texto_email = "Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome
+        if enviarEmail(email,u"[PIICT - CONFIRMACAO] - Cadastro de Projeto de Pesquisa",Texto_email):
+            return ("E-mail de confirmação enviado com sucesso.<BR>ID do seu projeto: " + str(ultimo_id))
+        else:
+            return("Não foi possível enviar o e-mail de confirmação. Anote o ID de seu projeto: " + str(ultimo_id))
+    except:
+        e = sys.exc_info()[0]
+        logging.debug(e)
+        logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram.")
+    finally:
+        return("Projeto cadastrado com sucesso! Anote o ID de seu projeto: " + str(ultimo_id))
 
 @app.route("/score", methods=['GET', 'POST'])
 def getScoreLattesFromFile():
@@ -445,6 +449,46 @@ def getScoreLattesFromFile():
         logging.debug(e)
         pontuacao = -1
         return("Erro ao calcular pontuacao! Favor, comunicar para o e-mail: atendimento.prpi@ufca.edu.br")
+
+#Devolve os nomes dos arquivos do projeto e dos planos, caso existam
+def getFiles(idProjeto):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    consulta = "SELECT arquivo_projeto,arquivo_plano1,arquivo_plano2 FROM editalProjeto WHERE id=" + idProjeto
+    cursor.execute(consulta)
+    linha = cursor.fetchone()
+    conn.close()
+    return(linha)
+
+#Gerar pagina de avaliacao para o avaliador
+@app.route("/avaliacao", methods=['GET', 'POST'])
+def getPaginaAvaliacao():
+    if request.method == "GET":
+        idProjeto = str(request.args.get('id'))
+        tokenAvaliacao = str(request.args.get('token'))
+        arquivos = getFiles(idProjeto)
+        if str(arquivos[0])!="0":
+            link_projeto = SITE + str(arquivos[0])
+        if str(arquivos[1])!="0":
+            link_plano1 = SITE + str(arquivos[1])
+        if str(arquivos[2])!="0":
+            link_plano2 = SITE + str(arquivos[2])
+        links = ""
+        if 'link_projeto' in locals():
+            links = links + "<a href=\"" + link_projeto + "\">PROJETO</a><BR>"
+        if 'link_plano1' in locals():
+            links = links + "<a href=\"" + link_plano1 + "\">PLANO DE TRABALHO 1</a><BR>"
+        if 'link_plano2' in locals():
+            links = links + "<a href=\"" + link_plano2 + "\">PLANO DE TRABALHO 2</a><BR>"
+        links = links + "<input type=\"hidden\" id=\"token\" name=\"token\" value=\"" + tokenAvaliacao + "\">"
+        links = Markup(links)
+        return render_template('avaliacao.html',arquivos=links)
+
+#Gravar avaliacao gerada pelo avaliador
+@app.route("/avaliar", methods=['GET', 'POST'])
+def enviarAvaliacao():
+    a=1
 
 if __name__ == "__main__":
     app.run()
