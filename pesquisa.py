@@ -37,10 +37,13 @@ PASSWORD = lines[0]
 GMAIL_PASSWORD = lines[1]
 
 
-def calcularScoreLattes(area,since,until,arquivo):
-
+def calcularScoreLattes(tipo,area,since,until,arquivo):
+    #Tipo = 0: Apenas pontuacao; Tipo = 1: Sumário
     pasta = "/home/perazzo/flask/projetos/pesquisa/modules/"
-    command = "python " + pasta + "scorerun.py -v -p 2016 -s " +  since + " -u " + until + " \"" + area + "\" " +  arquivo
+    if tipo==1:
+        command = "python " + pasta + "scorerun.py -v -p 2016 -s " +  since + " -u " + until + " \"" + area + "\" " +  arquivo
+    else:
+        command = "python " + pasta + "scorerun.py -p 2016 -s " +  since + " -u " + until + " \"" + area + "\" " +  arquivo
     s = os.popen(command).read()
     return (s)
 
@@ -433,19 +436,7 @@ def getScoreLattesFromFile():
     #CALCULANDO scorelattes
     pontuacao = -100
     try:
-        '''
-        tree = ET.parse(CURRICULOS_DIR + arquivo_curriculo_lattes)
-        root = tree.getroot()
-        score = SL.Score(root,2014, 2019, area_capes, 2016)
-        pontuacao = score.get_score()
-        sumario = score.sumario()
-        '''
-        #pasta = "/home/perazzo/flask/projetos/pesquisa/modules/"
-        #xmls = "/home/perazzo/flask/projetos/pesquisa/static/files/"
-        #command = "python " + pasta + "scorerun.py -v -p 2016 -s 2014 -u 2019 " + "\"" + area_capes + "\" " +  CURRICULOS_DIR + arquivo_curriculo_lattes
-        #s = os.popen(command).read()
-        s = calcularScoreLattes(area_capes,"2014","2019",CURRICULOS_DIR + arquivo_curriculo_lattes)
-        #return("Sua pontuacao: " + str(pontuacao) + "<BR>" + sumario)
+        s = calcularScoreLattes(1,area_capes,"2014","2019",CURRICULOS_DIR + arquivo_curriculo_lattes)
         return(s)
     except:
         e = sys.exc_info()[0]

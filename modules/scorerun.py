@@ -918,7 +918,7 @@ def main():
     if args.verbose == 1:
         print score.sumario()
     else:
-        print "%s,%s,%f" % ( score.get_lattes_id(), score.get_name().upper(), score.get_score() )
+        print "%.1f" % (score.get_score())
 
 # Main
 if __name__ == "__main__":
