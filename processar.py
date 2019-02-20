@@ -116,6 +116,7 @@ def enviarLinksParaAvaliadores():
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
+    #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.categoria=1"
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     for linha in linhas:
