@@ -5,6 +5,10 @@ import sys
 import MySQLdb
 import xml.etree.ElementTree as ET
 from modules import scoreLattes as SL
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.MIMEImage import MIMEImage
+from email.mime.text import MIMEText
 
 SITE = "https://programacao.ufca.edu.br/pesquisa/avaliacao"
 
@@ -69,6 +73,32 @@ def gerarLinkAvaliacao():
         atualizar(consulta)
 
     conn.close()
+
+def enviarEmail(to,subject,body):
+    gmail_user = 'pesquisa.prpi@ufca.edu.br'
+    gmail_password = GMAIL_PASSWORD
+    sent_from = gmail_user
+    para = [to]
+    #msg = MIMEMultipart()
+    msg = MIMEText(body)
+    msg['From'] = gmail_user
+    msg['To'] = to
+    msg['Subject'] = subject
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.ehlo()
+        server.login(gmail_user, gmail_password)
+        server.sendmail(sent_from, to, msg.as_string())
+        server.close()
+        logging.debug("E-Mail enviado com sucesso.")
+        return (True)
+    except:
+        e = sys.exc_info()[0]
+        logging.debug("Erro ao enviar e-mail: " + str(e))
+        return (False)
+
+def enviarLinksParaAvaliadores():
+    pass
 
 
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files/'

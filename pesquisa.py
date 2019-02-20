@@ -461,6 +461,20 @@ def getFiles(idProjeto):
     conn.close()
     return(linha)
 
+def naoEstaFinalizado(token):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    consulta = "SELECT finalizado FROM avaliacoes WHERE token=\"" + token + "\""
+    cursor.execute(consulta)
+    linha = cursor.fetchone()
+    finalizado = int(linha[0])
+    conn.close()
+    if finalizado==0:
+        return (True)
+    else:
+        return (False)
+
 #Gerar pagina de avaliacao para o avaliador
 @app.route("/avaliacao", methods=['GET', 'POST'])
 def getPaginaAvaliacao():
@@ -483,12 +497,30 @@ def getPaginaAvaliacao():
             links = links + "<a href=\"" + link_plano2 + "\">PLANO DE TRABALHO 2</a><BR>"
         links = links + "<input type=\"hidden\" id=\"token\" name=\"token\" value=\"" + tokenAvaliacao + "\">"
         links = Markup(links)
-        return render_template('avaliacao.html',arquivos=links)
+        if naoEstaFinalizado(tokenAvaliacao):
+            return render_template('avaliacao.html',arquivos=links)
+        else:
+            return("Projeto já foi avaliado! Não é possível modificar a avaliação!")
 
 #Gravar avaliacao gerada pelo avaliador
 @app.route("/avaliar", methods=['GET', 'POST'])
 def enviarAvaliacao():
-    a=1
-
+    if request.method == "POST":
+        comentarios = unicode(request.form['txtComentarios'])
+        recomendacao = str(request.form['txtRecomendacao'])
+        token = str(request.form['token'])
+        try:
+            consulta = "UPDATE avaliacoes SET comentario=\"" + comentarios + "\"" + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET recomendacao=" + recomendacao + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET finalizado=1" + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+        except:
+            e = sys.exc_info()[0]
+            logging.debug(e)
+            logging.error("ERRO ao gravar a avaliação: " + token)
+            return("Não foi possível gravar a avaliação. Favor entrar contactar pesquisa.prpi@ufca.edu.br.")
+        return("Avaliação realizada com sucesso. Agradecemos a colaboração!")
 if __name__ == "__main__":
     app.run()
