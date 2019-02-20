@@ -193,9 +193,21 @@ def gerarAutenticacao(identificador):
     conn.close()
     return (linha)
 
+def getEditaisAbertos():
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    consulta = "SELECT id,nome,deadline FROM editais WHERE now()<deadline ORDER BY id DESC"
+    cursor.execute(consulta)
+    linhas = cursor.fetchall()
+    conn.close()
+    return(linhas)
+
+
 @app.route("/")
 def home():
-    return ("OK")
+    editaisAbertos = getEditaisAbertos()
+    return (render_template('cadastrarProjeto.html',abertos=editaisAbertos))
 
 @app.route("/declaracao", methods=['GET', 'POST'])
 def declaracao():
