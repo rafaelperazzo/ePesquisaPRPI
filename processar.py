@@ -115,14 +115,14 @@ def enviarLinksParaAvaliadores():
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
-    #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.categoria=1"
+    #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
+    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.categoria=1 AND e.valendo=1 AND a.finalizado=0"
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     for linha in linhas:
         titulo = unicode(linha[1])
         resumo = unicode(linha[2])
-        email = "rafael.mota@ufca.edu.br"
+        email = unicode(linha[3])
         link = str(linha[4])
         mensagem = unicode("Título do Projeto: " + titulo + "\n")
         mensagem = mensagem + "Link para avaliação: " + link + " \n"
@@ -139,7 +139,7 @@ def enviarLinksParaAvaliadores():
         html = html + "<h3>Resumo do projeto <BR> " + resumo + "</h3><BR>\n"
         html = html + "</body></html>"
         enviarEmail(email,"[UFCA - Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html)
-
+        print("E-mail enviado para: " + email)
     conn.close()
 
 
@@ -161,4 +161,4 @@ sys.setdefaultencoding('utf-8')
 
 #GERAR LINK PARA AVALIADORES
 gerarLinkAvaliacao()
-#enviarLinksParaAvaliadores()
+enviarLinksParaAvaliadores()
