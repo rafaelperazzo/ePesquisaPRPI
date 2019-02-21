@@ -117,7 +117,7 @@ def enviarLinksParaAvaliadores():
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
-    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.categoria=1 AND e.valendo=1 AND a.finalizado=0"
+    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.enviado=0"
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     for linha in linhas:
@@ -129,6 +129,7 @@ def enviarLinksParaAvaliadores():
         id_avaliacao = str(linha[5])
         enviado = int(linha[6])
         token_avaliacao = unicode(linha[7])
+        categoria_projeto = int(linha[8])
         link_recusa = LINK_RECUSA + "recusarConvite?token=" + token_avaliacao
         mensagem = unicode("Título do Projeto: " + titulo + "\n")
         mensagem = mensagem + "Link para avaliação: " + link + " \n"
@@ -136,7 +137,10 @@ def enviarLinksParaAvaliadores():
         html = "<html><body>\n"
         html = html + "<h4><center>Universidade Federal do Cariri (UFCA) - Coordenadoria de Pesquisa</center></h4><BR>"
         html = html + "<h1><center>Solicitação de Avaliação de Projeto de Pesquisa</center></h1><BR>"
-        html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do projeto de pesquisa e/ou plano(s) de trabalho descrito(s) abaixo. Os arquivos relativos ao projeto podem ser acessados no link informado abaixo.<BR>"
+        if categoria_projeto==1:
+            html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do projeto de pesquisa e/ou plano(s) de trabalho descrito(s) abaixo. Os arquivos relativos ao projeto podem ser acessados no link informado abaixo.<BR>"
+        else:
+            html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do(s) plano(s) de trabalho disponíveis a seguir. Os arquivos relativos ao(s) plano(s) podem ser acessados no link informado abaixo.<BR>"
         html = html + "O projeto está em avaliação para concessão de bolsas de Iniciação Científica e/ou Tecnológica.<BR>"
         html = html + "Quaisquer dúvidas estamos a disposição,.<BR>"
         html = html + "<h4>Em caso de indisponibilidade de avaliação, favor <a href=\"" + link_recusa + "\">Clique aqui para recusar o convite</a>" + "</h4><BR>\n"
@@ -148,6 +152,8 @@ def enviarLinksParaAvaliadores():
         print("E-mail enviado para: " + email)
         enviado = enviado + 1
         consulta_enviado = "UPDATE avaliacoes SET enviado=" + str(enviado) + " WHERE id=" + id_avaliacao
+        atualizar(consulta_enviado)
+        consulta_enviado = "UPDATE avaliacoes SET data_envio=CURRENT_TIMESTAMP() WHERE id=" + id_avaliacao
         atualizar(consulta_enviado)
 
     conn.close()

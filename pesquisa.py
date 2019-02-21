@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
+#SELECT sec_to_time(TIMESTAMPDIFF(SECOND,avaliacoes.data_envio,avaliacoes.data_avaliacao)) as tempoAvaliacao FROM avaliacoes;
 from flask import Flask
 from flask import render_template
 from flask import request,url_for,send_file,send_from_directory,redirect,flash,Markup
@@ -535,6 +536,8 @@ def enviarAvaliacao():
             consulta = "UPDATE avaliacoes SET recomendacao=" + recomendacao + " WHERE token=\"" + token + "\""
             atualizar(consulta)
             consulta = "UPDATE avaliacoes SET finalizado=1" + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET data_avaliacao=CURRENT_TIMESTAMP()" + " WHERE token=\"" + token + "\""
             atualizar(consulta)
         except:
             e = sys.exc_info()[0]
