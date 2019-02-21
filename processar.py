@@ -14,6 +14,7 @@ from email.mime.text import MIMEText
 from email.header import Header
 
 SITE = "https://programacao.ufca.edu.br/pesquisa/avaliacao"
+LINK_RECUSA = "https://programacao.ufca.edu.br/pesquisa/"
 UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files/'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
@@ -116,14 +117,19 @@ def enviarLinksParaAvaliadores():
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
-    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.categoria=1 AND e.valendo=1 AND a.finalizado=0"
+    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.categoria=1 AND e.valendo=1 AND a.finalizado=0"
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     for linha in linhas:
         titulo = unicode(linha[1])
         resumo = unicode(linha[2])
         email = unicode(linha[3])
+        #email = "rafael.mota@ufca.edu.br"
         link = str(linha[4])
+        id_avaliacao = str(linha[5])
+        enviado = int(linha[6])
+        token_avaliacao = unicode(linha[7])
+        link_recusa = LINK_RECUSA + "recusarConvite?token=" + token_avaliacao
         mensagem = unicode("Título do Projeto: " + titulo + "\n")
         mensagem = mensagem + "Link para avaliação: " + link + " \n"
         mensagem = mensagem + "Resumo do projeto\n" + resumo
@@ -133,13 +139,17 @@ def enviarLinksParaAvaliadores():
         html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do projeto de pesquisa e/ou plano(s) de trabalho descrito(s) abaixo. Os arquivos relativos ao projeto podem ser acessados no link informado abaixo.<BR>"
         html = html + "O projeto está em avaliação para concessão de bolsas de Iniciação Científica e/ou Tecnológica.<BR>"
         html = html + "Quaisquer dúvidas estamos a disposição,.<BR>"
-        html = html + "<h4>Em caso de indisponibilidade de avaliação, favor responder este e-mail. Desde já agradecemos a atenção.</h4><BR>\n"
+        html = html + "<h4>Em caso de indisponibilidade de avaliação, favor <a href=\"" + link_recusa + "\">Clique aqui para recusar o convite</a>" + "</h4><BR>\n"
         html = html + "<h2>Link para envio da avaliação: <a href=\"" + link + "\">Clique Aqui</a></h2><BR>\n"
         html = html + "<h2>Título do projeto: " + titulo + "</h2><BR>\n"
         html = html + "<h3>Resumo do projeto <BR> " + resumo + "</h3><BR>\n"
         html = html + "</body></html>"
         enviarEmail(email,"[UFCA - Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html)
         print("E-mail enviado para: " + email)
+        enviado = enviado + 1
+        consulta_enviado = "UPDATE avaliacoes SET enviado=" + str(enviado) + " WHERE id=" + id_avaliacao
+        atualizar(consulta_enviado)
+
     conn.close()
 
 

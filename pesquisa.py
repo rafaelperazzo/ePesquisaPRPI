@@ -542,5 +542,18 @@ def enviarAvaliacao():
             logging.error("[AVALIACAO] ERRO ao gravar a avaliação: " + token)
             return("Não foi possível gravar a avaliação. Favor entrar contactar pesquisa.prpi@ufca.edu.br.")
         return("Avaliação realizada com sucesso. Agradecemos a colaboração!")
+
+@app.route("/recusarConvite", methods=['GET', 'POST'])
+def recusarConvite():
+    if request.method == "GET":
+        tokenAvaliacao = str(request.args.get('token'))
+        consulta = "UPDATE avaliacoes set aceitou=0 WHERE token=\"" + tokenAvaliacao + "\""
+        atualizar(consulta)
+        body = "O avaliador de token " + tokenAvaliacao + " recusou o convite de avaliacao."
+        enviarEmail("pesquisa.prpi@ufca.edu.br","[PIICT - RECUSA] Recusa de convite para avaliacao",body)
+        return("Avaliação cancelada com sucesso. Agradecemos a atenção.")
+    else:
+        return("OK")
+
 if __name__ == "__main__":
     app.run()
