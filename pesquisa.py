@@ -14,6 +14,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.MIMEImage import MIMEImage
 from email.mime.text import MIMEText
+from email.header import Header
 import logging
 import sys
 import xml.etree.ElementTree as ET
@@ -55,10 +56,10 @@ def enviarEmail(to,subject,body):
     sent_from = gmail_user
     para = [to]
     #msg = MIMEMultipart()
-    msg = MIMEText(body)
+    msg = MIMEText(body,'plain','utf-8')
     msg['From'] = gmail_user
     msg['To'] = to
-    msg['Subject'] = subject
+    msg['Subject'] = Header(subject, "utf-8")
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.ehlo()
@@ -375,19 +376,21 @@ def cadastrarProjeto():
         token = id_generator(40)
         consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador1_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
         atualizar(consulta)
+        logging.debug("Avaliador 1 sugerido cadastrado.")
 
     avaliador2_email = unicode(request.form['avaliador2_email'])
     if avaliador2_email!='':
         token = id_generator(40)
         consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador2_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
         atualizar(consulta)
+        logging.debug("Avaliador 2 sugerido cadastrado.")
 
     avaliador3_email = unicode(request.form['avaliador3_email'])
     if avaliador3_email!='':
         token = id_generator(40)
         consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador3_email + "\", \"" + token + "\", " + str(ultimo_id) + ")"
         atualizar(consulta)
-    logging.debug("Avaliadores sugeridos cadastrados.")
+        logging.debug("Avaliador 3 sugerido cadastrado.")
 
     #CALCULANDO scorelattes
 
@@ -401,19 +404,19 @@ def cadastrarProjeto():
         logging.debug("Calculo do scorelattes finalizado com sucesso.")
     except:
         e = sys.exc_info()[0]
-        logging.debug(e)
-        logging.debug(CURRICULOS_DIR + arquivo_curriculo_lattes)
+        logging.error(e)
+        logging.error(CURRICULOS_DIR + arquivo_curriculo_lattes)
         pontuacao = -1
-        logging.debug("Calculo do scorelattes NAO finalizado.")
+        logging.error("Nao foi possivel calcular o scorelattes.")
 
     try:
         consulta = "UPDATE editalProjeto SET scorelattes=" + str(pontuacao) + " WHERE id=" + str(ultimo_id)
         atualizar(consulta)
-        logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado com sucesso.")
+        logging.debug("Procedimento de atualizacao do scorelattes para o ID: " + ultimo_id_str + " finalizado com sucesso.")
     except:
         e = sys.exc_info()[0]
-        logging.debug(e)
-        logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram.")
+        logging.error(e)
+        logging.error("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram ao tentar atualizar o scorelattes.")
     finally:
         conn.close()
 
@@ -421,15 +424,18 @@ def cadastrarProjeto():
         #ENVIAR E-MAIL DE CONFIRMAÇÃO
         Texto_email = "Projeto [" + tipo_str + "] [" + categoria_str + "] com ID: " + ultimo_id_str + " cadastrado. Proponente: " + nome
         if enviarEmail(email,u"[PIICT - CONFIRMACAO] - Cadastro de Projeto de Pesquisa",Texto_email):
+            logging.debug("E-mail de confirmacao enviado com sucesso.")
             return ("E-mail de confirmação enviado com sucesso.<BR>ID do seu projeto: " + str(ultimo_id))
         else:
+            logging.error("Nao foi possivel enviar e-mail de confirmacao.[" + str(ultimo_id) + "]")
             return("Não foi possível enviar o e-mail de confirmação. Anote o ID de seu projeto: " + str(ultimo_id))
     except:
         e = sys.exc_info()[0]
-        logging.debug(e)
-        logging.debug("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram.")
+        logging.error(e)
+        logging.error("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram ao enviar e-mail.")
     finally:
-        return("Projeto cadastrado com sucesso! Anote o ID de seu projeto: " + str(ultimo_id))
+        #return("Projeto cadastrado com sucesso! Anote o ID de seu projeto: " + str(ultimo_id))
+        return (render_template('confirmacao_submissao.html',email_proponente=email,id_projeto=ultimo_id,proponente=nome,titulo_projeto=titulo,resumo_projeto=descricao_resumida,score=pontuacao))
 
 @app.route("/score", methods=['GET', 'POST'])
 def getScoreLattesFromFile():
@@ -458,7 +464,8 @@ def getScoreLattesFromFile():
         return(s)
     except:
         e = sys.exc_info()[0]
-        logging.debug(e)
+        logging.error("[SCORELATTES] Erro ao calcular o scorelattes.")
+        logging.error(e)
         pontuacao = -1
         return("Erro ao calcular pontuacao! Favor, comunicar para o e-mail: atendimento.prpi@ufca.edu.br")
 
@@ -512,6 +519,7 @@ def getPaginaAvaliacao():
         if naoEstaFinalizado(tokenAvaliacao):
             return render_template('avaliacao.html',arquivos=links)
         else:
+            logging.debug("[AVALIACAO] Tentativa de reavaliar projeto")
             return("Projeto já foi avaliado! Não é possível modificar a avaliação!")
 
 #Gravar avaliacao gerada pelo avaliador
@@ -530,8 +538,8 @@ def enviarAvaliacao():
             atualizar(consulta)
         except:
             e = sys.exc_info()[0]
-            logging.debug(e)
-            logging.error("ERRO ao gravar a avaliação: " + token)
+            logging.error(e)
+            logging.error("[AVALIACAO] ERRO ao gravar a avaliação: " + token)
             return("Não foi possível gravar a avaliação. Favor entrar contactar pesquisa.prpi@ufca.edu.br.")
         return("Avaliação realizada com sucesso. Agradecemos a colaboração!")
 if __name__ == "__main__":

@@ -1,6 +1,4 @@
 *.pyc
-*.pdf
-*.xml
 *.pass
 *.sh
 *.sql

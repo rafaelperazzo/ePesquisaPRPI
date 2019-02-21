@@ -161,4 +161,4 @@ sys.setdefaultencoding('utf-8')
 
 #GERAR LINK PARA AVALIADORES
 gerarLinkAvaliacao()
-enviarLinksParaAvaliadores()
+#enviarLinksParaAvaliadores()

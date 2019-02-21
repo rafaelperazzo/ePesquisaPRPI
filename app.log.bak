@@ -1,0 +1,53 @@
+2019-02-20 14:28:08,497 root - DEBUG - Projeto [Edital] [Projeto em andamento] com ID: 022 cadastrado. Proponente: RAFAEL PERAZZO BARBOSA MOTA
+2019-02-20 14:28:08,497 root - DEBUG - Preparando para atualizar dados do projeto.
+2019-02-20 14:28:08,499 root - DEBUG - Dados do projeto cadastrados.
+2019-02-20 14:28:08,504 root - DEBUG - Arquivo lattes cadastrado.
+2019-02-20 14:28:08,504 root - DEBUG - Não foi incluído um arquivo de projeto
+2019-02-20 14:28:08,504 root - DEBUG - Não foi incluído um arquivo de plano 1
+2019-02-20 14:28:08,504 root - DEBUG - Não foi incluído um arquivo de plano 2
+2019-02-20 14:28:08,504 root - DEBUG - Avaliadores sugeridos cadastrados.
+2019-02-20 14:28:08,504 root - DEBUG - Iniciando o cálculo do scorelattes...
+2019-02-20 14:28:08,800 root - DEBUG - Calculo do scorelattes finalizado com sucesso.
+2019-02-20 14:28:08,803 root - DEBUG - Procedimento para o ID: 022 finalizado com sucesso.
+2019-02-20 14:28:12,961 root - DEBUG - E-Mail enviado com sucesso.
+2019-02-20 16:03:34,302 root - DEBUG - Projeto [Edital] [Projeto Novo] com ID: 023 cadastrado. Proponente: Sally de França Lacerda Pinheiro
+2019-02-20 16:03:34,302 root - DEBUG - Preparando para atualizar dados do projeto.
+2019-02-20 16:03:34,304 root - DEBUG - Dados do projeto cadastrados.
+2019-02-20 16:03:34,307 root - DEBUG - Arquivo lattes cadastrado.
+2019-02-20 16:03:34,310 root - DEBUG - Arquivo de projeto cadastrado.
+2019-02-20 16:03:34,312 root - DEBUG - Arquivo Plano 1 cadastrado.
+2019-02-20 16:03:34,312 root - DEBUG - Não foi incluído um arquivo de plano 2
+2019-02-20 16:03:34,318 root - DEBUG - Avaliadores sugeridos cadastrados.
+2019-02-20 16:03:34,318 root - DEBUG - Iniciando o cálculo do scorelattes...
+2019-02-20 16:03:37,203 root - DEBUG - Calculo do scorelattes finalizado com sucesso.
+2019-02-20 16:03:37,207 root - DEBUG - Procedimento para o ID: 023 finalizado com sucesso.
+2019-02-20 16:03:37,207 root - DEBUG - <type 'exceptions.UnicodeEncodeError'>
+2019-02-20 16:03:37,207 root - DEBUG - Procedimento para o ID: 023 finalizado. Erros ocorreram.
+2019-02-20 22:16:46,955 root - DEBUG - Projeto [Edital] [Projeto Novo] com ID: 024 cadastrado. Proponente: AERSON MOREIRA BARRETO
+2019-02-20 22:16:46,955 root - DEBUG - Preparando para atualizar dados do projeto.
+2019-02-20 22:16:46,959 root - DEBUG - Dados do projeto cadastrados.
+2019-02-20 22:16:46,962 root - DEBUG - Arquivo lattes cadastrado.
+2019-02-20 22:16:46,966 root - DEBUG - Arquivo de projeto cadastrado.
+2019-02-20 22:16:46,966 root - DEBUG - Não foi incluído um arquivo de plano 1
+2019-02-20 22:16:46,966 root - DEBUG - Não foi incluído um arquivo de plano 2
+2019-02-20 22:16:46,970 root - DEBUG - Avaliadores sugeridos cadastrados.
+2019-02-20 22:16:46,971 root - DEBUG - Iniciando o cálculo do scorelattes...
+2019-02-20 22:16:47,101 root - DEBUG - <type 'exceptions.ValueError'>
+2019-02-20 22:16:47,102 root - DEBUG - /home/perazzo/flask/projetos/pesquisa/static/files/1885973_dW37PAAKraoTWi1IKCG0.xml
+2019-02-20 22:16:47,102 root - DEBUG - Calculo do scorelattes NAO finalizado.
+2019-02-20 22:16:47,105 root - DEBUG - Procedimento para o ID: 024 finalizado com sucesso.
+2019-02-20 22:16:52,030 root - DEBUG - E-Mail enviado com sucesso.
+2019-02-20 22:17:37,660 root - DEBUG - Projeto [Edital] [Projeto Novo] com ID: 025 cadastrado. Proponente: AERSON MOREIRA BARRETO
+2019-02-20 22:17:37,661 root - DEBUG - Preparando para atualizar dados do projeto.
+2019-02-20 22:17:37,662 root - DEBUG - Dados do projeto cadastrados.
+2019-02-20 22:17:37,666 root - DEBUG - Arquivo lattes cadastrado.
+2019-02-20 22:17:37,667 root - DEBUG - Arquivo de projeto cadastrado.
+2019-02-20 22:17:37,667 root - DEBUG - Não foi incluído um arquivo de plano 1
+2019-02-20 22:17:37,668 root - DEBUG - Não foi incluído um arquivo de plano 2
+2019-02-20 22:17:37,674 root - DEBUG - Avaliadores sugeridos cadastrados.
+2019-02-20 22:17:37,674 root - DEBUG - Iniciando o cálculo do scorelattes...
+2019-02-20 22:17:37,805 root - DEBUG - <type 'exceptions.ValueError'>
+2019-02-20 22:17:37,805 root - DEBUG - /home/perazzo/flask/projetos/pesquisa/static/files/1885973_cTbXWoKfpjRMchLQKYsX.xml
+2019-02-20 22:17:37,805 root - DEBUG - Calculo do scorelattes NAO finalizado.
+2019-02-20 22:17:37,809 root - DEBUG - Procedimento para o ID: 025 finalizado com sucesso.
+2019-02-20 22:17:40,177 root - DEBUG - E-Mail enviado com sucesso.
