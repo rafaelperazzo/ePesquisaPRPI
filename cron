@@ -1,1 +1,2 @@
 */5 * * * * rm -f /home/perazzo/flask/projetos/pesquisa/static/files/000_*.xml
+0 7,12,18,23 * 2,3,4,5,6 * /usr/bin/python /home/perazzo/flask/projetos/pesquisa/processar.py

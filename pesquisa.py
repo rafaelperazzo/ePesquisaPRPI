@@ -532,6 +532,7 @@ def enviarAvaliacao():
     if request.method == "POST":
         comentarios = unicode(request.form['txtComentarios'])
         recomendacao = str(request.form['txtRecomendacao'])
+        nome_avaliador = unicode(request.form['txtNome'])
         token = str(request.form['token'])
         try:
             consulta = "UPDATE avaliacoes SET comentario=\"" + comentarios + "\"" + " WHERE token=\"" + token + "\""
@@ -542,12 +543,15 @@ def enviarAvaliacao():
             atualizar(consulta)
             consulta = "UPDATE avaliacoes SET data_avaliacao=CURRENT_TIMESTAMP()" + " WHERE token=\"" + token + "\""
             atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET nome_avaliador=\"" + nome_avaliador + "\"" + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
         except:
             e = sys.exc_info()[0]
             logging.error(e)
             logging.error("[AVALIACAO] ERRO ao gravar a avaliação: " + token)
             return("Não foi possível gravar a avaliação. Favor entrar contactar pesquisa.prpi@ufca.edu.br.")
-        return("Avaliação realizada com sucesso. Agradecemos a colaboração!")
+        data_agora = getData()
+        return(render_template('declaracao_avaliador.html',nome=nome_avaliador,data=data_agora))
 
 @app.route("/recusarConvite", methods=['GET', 'POST'])
 def recusarConvite():
