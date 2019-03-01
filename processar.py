@@ -117,7 +117,7 @@ def enviarLinksParaAvaliadores():
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
-    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.enviado=0"
+    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou=1"
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     for linha in linhas:
@@ -144,7 +144,7 @@ def enviarLinksParaAvaliadores():
         html = html + "O projeto está em avaliação para concessão de bolsas de Iniciação Científica e/ou Tecnológica.<BR>"
         html = html + "Quaisquer dúvidas estamos a disposição. A declaração de avaliação é gerada imediatamente após a conclusão da avaliação.<BR>"
         html = html + "<h4>Em caso de indisponibilidade de avaliação, favor <a href=\"" + link_recusa + "\">Clique aqui para recusar o convite</a>" + "</h4><BR>\n"
-        html = html + "<h2>Link para envio da avaliação: <a href=\"" + link + "\">Clique Aqui</a></h2><BR>\n"
+        html = html + "<h2>Link para acessar os arquivos e envio da avaliação: <a href=\"" + link + "\">Clique Aqui</a></h2><BR>\n"
         html = html + "<h2>Título do projeto: " + titulo + "</h2><BR>\n"
         html = html + "<h3>Resumo do projeto <BR> " + resumo + "</h3><BR>\n"
         html = html + "</body></html>"
