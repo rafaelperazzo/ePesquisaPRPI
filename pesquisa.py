@@ -552,6 +552,8 @@ def enviarAvaliacao():
             return("Não foi possível gravar a avaliação. Favor entrar contactar pesquisa.prpi@ufca.edu.br.")
         data_agora = getData()
         return(render_template('declaracao_avaliador.html',nome=nome_avaliador,data=data_agora))
+    else:
+        return("OK")
 
 @app.route("/recusarConvite", methods=['GET', 'POST'])
 def recusarConvite():
@@ -562,6 +564,33 @@ def recusarConvite():
         body = "O avaliador de token " + tokenAvaliacao + " recusou o convite de avaliacao."
         enviarEmail("pesquisa.prpi@ufca.edu.br","[PIICT - RECUSA] Recusa de convite para avaliacao",body)
         return("Avaliação cancelada com sucesso. Agradecemos a atenção.")
+    else:
+        return("OK")
+
+@app.route("/avaliacoesNegadas", methods=['GET', 'POST'])
+def avaliacoesNegadas():
+    if request.method == "GET":
+        conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+        conn.select_db('pesquisa')
+        cursor  = conn.cursor()
+        codigoEdital = str(request.args.get('edital'))
+        consulta = "SELECT editalProjeto.id,CONCAT(SUBSTRING(editalProjeto.titulo,1,80),\" - (\",editalProjeto.nome,\" )\") FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND avaliacoes.aceitou=0 AND editalProjeto.categoria=1 AND editalProjeto.tipo=" + codigoEdital
+        cursor.execute(consulta)
+        linha = cursor.fetchall()
+        conn.close()
+        return(render_template('inserirAvaliador.html',listaProjetos=linha))
+    else:
+        return("OK")
+
+@app.route("/inserirAvaliador", methods=['GET', 'POST'])
+def inserirAvaliador():
+    if request.method == "POST":
+        token = id_generator(40)
+        idProjeto = int(request.form['txtProjeto'])
+        avaliador1_email = str(request.form['txtEmail'])
+        consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador1_email + "\", \"" + token + "\", " + str(idProjeto) + ")"
+        atualizar(consulta)
+        return("Avaliador cadastrado com sucesso.")
     else:
         return("OK")
 

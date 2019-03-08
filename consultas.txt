@@ -1,0 +1,17 @@
+#Projetos com avaliacoes negadas do edital 1
+SELECT editalProjeto.id,editalProjeto.titulo,editalProjeto.nome FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND aceitou=0 AND editalProjeto.tipo=1 AND categoria=1 ORDER by idProjeto
+#Projetos com o somatorio de avaliacoes positivas
+SELECT editalProjeto.id,editalProjeto.titulo, SUM(avaliacoes.recomendacao) as soma FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND editalProjeto.tipo=1 AND avaliacoes.aceitou=1 AND editalProjeto.categoria=1 GROUP BY avaliacoes.idProjeto ORDER BY soma
+#Projetos com o somatorio de avaliacoes
+SELECT idProjeto,sum(recomendacao) as soma,
+(SELECT titulo FROM editalProjeto WHERE id=idProjeto) as titulo 
+
+FROM avaliacoes 
+
+WHERE (SELECT categoria FROM editalProjeto WHERE id=idProjeto)=1 
+AND (SELECT tipo FROM editalProjeto WHERE id=idProjeto)=1
+AND aceitou=1
+
+GROUP BY idProjeto 
+
+ORDER BY soma,idProjeto
