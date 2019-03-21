@@ -12,13 +12,14 @@ from email.mime.multipart import MIMEMultipart
 from email.MIMEImage import MIMEImage
 from email.mime.text import MIMEText
 from email.header import Header
+from email.mime.application import MIMEApplication
 
-SITE = "https://programacao.ufca.edu.br/pesquisa/avaliacao"
-LINK_RECUSA = "https://programacao.ufca.edu.br/pesquisa/"
-UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files/'
+SITE = "https://yoko.pet/pesquisa/avaliacao"
+LINK_RECUSA = "https://yoko.pet/pesquisa/"
+UPLOAD_FOLDER = '/home/perazzo/pesquisa/static/files/'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
-WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
-CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/files/'
+WORKING_DIR='/home/perazzo/pesquisa/'
+CURRICULOS_DIR='/home/perazzo/pesquisa/static/files/'
 #Obtendo senhas
 lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
 PASSWORD = lines[0]
@@ -94,16 +95,23 @@ def enviarEmail(to,subject,body,html):
     msg = MIMEMultipart('alternative')
     part1 = MIMEText(body,'plain','utf-8')
     part2 = MIMEText(html, 'html','utf-8')
-    msg['From'] = gmail_user
-    msg['To'] = to
-    msg['Subject'] = Header(subject, "utf-8")
     msg.attach(part1)
     msg.attach(part2)
+    pdf = open("/home/perazzo/pesquisa/convite-consultor-ad-hoc.pdf", "rb")
+    pdfAttachment = MIMEApplication(pdf.read(), _subtype = "pdf")
+    pdfAttachment.add_header('content-disposition', 'attachment', filename = 'convite.pdf')
+    message = MIMEMultipart('mixed')
+    message.attach(msg)
+    message.attach(pdfAttachment)
+    message['From'] = gmail_user
+    message['To'] = to
+    message['Subject'] = Header(subject, "utf-8")
+
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.ehlo()
         server.login(gmail_user, gmail_password)
-        server.sendmail(sent_from, to, msg.as_string())
+        server.sendmail(sent_from, to, message.as_string())
         server.close()
         logging.debug("E-Mail enviado com sucesso.")
         return (True)
@@ -117,13 +125,14 @@ def enviarLinksParaAvaliadores():
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
-    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou=1 and a.enviado=0"
+    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou=1 and a.enviado=0 and e.categoria=1"
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     for linha in linhas:
         titulo = unicode(linha[1])
         resumo = unicode(linha[2])
         email = unicode(linha[3])
+        envios = int(linha[6])
         #email = "rafael.mota@ufca.edu.br"
         link = str(linha[4])
         id_avaliacao = str(linha[5])
@@ -136,19 +145,28 @@ def enviarLinksParaAvaliadores():
         mensagem = mensagem + "Resumo do projeto\n" + resumo
         html = "<html><body>\n"
         html = html + "<h4><center>Universidade Federal do Cariri (UFCA) - Coordenadoria de Pesquisa</center></h4><BR>"
-        html = html + "<h1><center>Solicitação de Avaliação de Projeto de Pesquisa</center></h1><BR>"
+        html = html + "<h1><center>Solicitação de Avaliação de Projeto de Pesquisa (e-mail automático)</center></h1><BR>"
         if categoria_projeto==1:
-            html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do projeto de pesquisa e/ou plano(s) de trabalho descrito(s) abaixo. Os arquivos relativos ao projeto podem ser acessados no link informado abaixo.<BR>"
+            if envios==0:
+                html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do projeto de pesquisa e/ou plano(s) de trabalho descrito(s) abaixo. Os arquivos relativos ao projeto podem ser acessados no link informado abaixo.<BR>"
+            else:
+                html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de lembra-lo sobre a avaliação do projeto de pesquisa e/ou plano(s) de trabalho descrito(s) abaixo. Os arquivos relativos ao projeto podem ser acessados no link informado abaixo.<BR>"
         else:
-            html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do(s) plano(s) de trabalho disponíveis a seguir. Os arquivos relativos ao(s) plano(s) podem ser acessados no link informado abaixo.<BR>"
+            html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do(s) plano(s) de trabalho disponíveis a seguir. O convite formal segue em anexo, assinado digitalmente. Os arquivos relativos ao(s) plano(s) podem ser acessados no link informado abaixo.<BR>"
         html = html + "O projeto está em avaliação para concessão de bolsas de Iniciação Científica e/ou Tecnológica.<BR>"
         html = html + "Quaisquer dúvidas estamos a disposição. A declaração de avaliação é gerada imediatamente após a conclusão da avaliação.<BR>"
         html = html + "<h4>Em caso de indisponibilidade de avaliação, favor <a href=\"" + link_recusa + "\">Clique aqui para recusar o convite</a>" + "</h4><BR>\n"
         html = html + "<h2>Link para acessar os arquivos e envio da avaliação: <a href=\"" + link + "\">Clique Aqui</a></h2><BR>\n"
         html = html + "<h2>Título do projeto: " + titulo + "</h2><BR>\n"
         html = html + "<h3>Resumo do projeto <BR> " + resumo + "</h3><BR>\n"
+        html = html + "<h3>Deadline: 29/03/2019 <BR> </h3><BR>\n"
+        html = html + "<h3>Site oficial do processo seletivo PRPI/UFCA: http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/ </h3><BR>\n"
+        html = html + "<h3>Telefone institucional para contato direto com o coordenador: (88)3221-9566 - http://telefonia.ufca.edu.br </h3><BR>\n"
         html = html + "</body></html>"
-        enviarEmail(email,"[UFCA - Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html)
+        if envios==0:
+            enviarEmail(email,"[UFCA - Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html)
+        else:
+            enviarEmail(email,"[UFCA - LEMBRETE de Solicitação de Avaliação de Projeto de Pesquisa] - Mudança de link",mensagem,html)
         print("E-mail enviado para: " + email)
         enviado = enviado + 1
         consulta_enviado = "UPDATE avaliacoes SET enviado=" + str(enviado) + " WHERE id=" + id_avaliacao

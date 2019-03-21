@@ -23,12 +23,13 @@ import logging
 import sys
 import xml.etree.ElementTree as ET
 from modules import scoreLattes as SL
+import json
 
-UPLOAD_FOLDER = '/home/perazzo/flask/projetos/pesquisa/static/files'
+UPLOAD_FOLDER = '/home/perazzo/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
-WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/'
-CURRICULOS_DIR='/home/perazzo/flask/projetos/pesquisa/static/files/'
-SITE = "https://programacao.ufca.edu.br/pesquisa/static/files/"
+WORKING_DIR='/home/perazzo/pesquisa/'
+CURRICULOS_DIR='/home/perazzo/pesquisa/static/files/'
+SITE = "https://yoko.pet/pesquisa/static/files/"
 
 app = Flask(__name__)
 
@@ -42,6 +43,10 @@ lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
 PASSWORD = lines[0]
 GMAIL_PASSWORD = lines[1]
 
+def removerAspas(texto):
+    resultado = texto.replace('"',' ')
+    resultado = resultado.replace("'"," ")
+    return(resultado)
 
 def calcularScoreLattes(tipo,area,since,until,arquivo):
     #Tipo = 0: Apenas pontuacao; Tipo = 1: Sumário
@@ -79,7 +84,7 @@ def enviarEmail(to,subject,body):
 
 def atualizar(consulta):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
-    conn.autocommit(False)
+    conn.autocommit(True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     try:
@@ -88,7 +93,8 @@ def atualizar(consulta):
     except MySQLdb.Error, e:
         #e = sys.exc_info()[0]
         logging.debug(e)
-        conn.rollback()
+	logging.debug(consulta)
+        #conn.rollback()
     finally:
         conn.close()
 
@@ -297,9 +303,12 @@ def cadastrarProjeto():
     #CADASTRAR DADOS DO PROJETO
 
     titulo = unicode(request.form['titulo'])
+    titulo = removerAspas(titulo)
     validade = int(request.form['validade'])
     palavras_chave = unicode(request.form['palavras_chave'])
+    palavras_chave = removerAspas(palavras_chave)
     descricao_resumida = unicode(request.form['descricao_resumida'])
+    descricao_resumida = removerAspas(descricao_resumida)
     if 'numero_bolsas' in request.form:
         bolsas = int(request.form['numero_bolsas'])
     else:
@@ -535,8 +544,6 @@ def enviarAvaliacao():
         nome_avaliador = unicode(request.form['txtNome'])
         token = str(request.form['token'])
         try:
-            consulta = "UPDATE avaliacoes SET comentario=\"" + comentarios + "\"" + " WHERE token=\"" + token + "\""
-            atualizar(consulta)
             consulta = "UPDATE avaliacoes SET recomendacao=" + recomendacao + " WHERE token=\"" + token + "\""
             atualizar(consulta)
             consulta = "UPDATE avaliacoes SET finalizado=1" + " WHERE token=\"" + token + "\""
@@ -544,6 +551,10 @@ def enviarAvaliacao():
             consulta = "UPDATE avaliacoes SET data_avaliacao=CURRENT_TIMESTAMP()" + " WHERE token=\"" + token + "\""
             atualizar(consulta)
             consulta = "UPDATE avaliacoes SET nome_avaliador=\"" + nome_avaliador + "\"" + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            comentarios = comentarios.replace('"',' ')
+            comentarios = comentarios.replace("'"," ")
+            consulta = "UPDATE avaliacoes SET comentario=\"" + comentarios + "\"" + " WHERE token=\"" + token + "\""
             atualizar(consulta)
         except:
             e = sys.exc_info()[0]
@@ -555,14 +566,25 @@ def enviarAvaliacao():
     else:
         return("OK")
 
+def consultar(consulta):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    cursor.execute(consulta)
+    linhas = cursor.fetchall()
+    conn.close()
+    return (linhas)
+
+## TODO: Enviar email com titulo e autor do projeto ao inves do token
 @app.route("/recusarConvite", methods=['GET', 'POST'])
 def recusarConvite():
     if request.method == "GET":
         tokenAvaliacao = str(request.args.get('token'))
         consulta = "UPDATE avaliacoes set aceitou=0 WHERE token=\"" + tokenAvaliacao + "\""
         atualizar(consulta)
-        body = "O avaliador de token " + tokenAvaliacao + " recusou o convite de avaliacao."
-        enviarEmail("pesquisa.prpi@ufca.edu.br","[PIICT - RECUSA] Recusa de convite para avaliacao",body)
+        #SELECT editalProjeto.titulo,editalProjeto.nome FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND avaliacoes.token="DL7tueygfszlgqVc2V6HTgN7fSaDjsIPq7O2LpWT"
+        #body = "O avaliador de token " + tokenAvaliacao + " recusou o convite de avaliacao."
+        #enviarEmail("pesquisa.prpi@ufca.edu.br","[PIICT - RECUSA] Recusa de convite para avaliacao",body)
         return("Avaliação cancelada com sucesso. Agradecemos a atenção.")
     else:
         return("OK")
@@ -574,11 +596,20 @@ def avaliacoesNegadas():
         conn.select_db('pesquisa')
         cursor  = conn.cursor()
         codigoEdital = str(request.args.get('edital'))
-        consulta = "SELECT editalProjeto.id,CONCAT(SUBSTRING(editalProjeto.titulo,1,80),\" - (\",editalProjeto.nome,\" )\") FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND avaliacoes.aceitou=0 AND editalProjeto.categoria=1 AND editalProjeto.tipo=" + codigoEdital
-        cursor.execute(consulta)
-        linha = cursor.fetchall()
-        conn.close()
-        return(render_template('inserirAvaliador.html',listaProjetos=linha))
+        #consulta = "SELECT editalProjeto.id,CONCAT(SUBSTRING(editalProjeto.titulo,1,80),\" - (\",editalProjeto.nome,\" )\"),sum(avaliacoes.finalizado) as soma FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND editalProjeto.categoria=1 AND editalProjeto.valendo=1 AND editalProjeto.tipo=" + codigoEdital + " GROUP by avaliacoes.idProjeto order by soma"
+        consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE (resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes)<2 AND resumoGeralAvaliacoes.tipo=" + codigoEdital + " order by resultado"
+        try:
+            cursor.execute(consulta)
+            linha = cursor.fetchall()
+            total = cursor.rowcount
+            conn.close()
+            return(render_template('inserirAvaliador.html',listaProjetos=linha,totalDeLinhas=total))
+        except:
+            e = sys.exc_info()[0]
+            logging.error(e)
+            logging.error(consulta)
+            conn.close()
+            return(consulta)
     else:
         return("OK")
 
@@ -591,6 +622,17 @@ def inserirAvaliador():
         consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador1_email + "\", \"" + token + "\", " + str(idProjeto) + ")"
         atualizar(consulta)
         return("Avaliador cadastrado com sucesso.")
+    else:
+        return("OK")
+
+## TODO: Finalizar as estatisticas
+@app.route("/estatisticas", methods=['GET', 'POST'])
+def estatisticas():
+    if request.method == "GET":
+        codigoEdital = str(request.args.get('edital'))
+        #Projetos aprovados
+
+        #Projetos que faltam avaliacoes
     else:
         return("OK")
 

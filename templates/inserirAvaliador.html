@@ -5,11 +5,12 @@
     <title>Inserir Avaliador</title>
   </head>
   <body>
+    <i>Total de Projetos com pendências de avaliação: {{ totalDeLinhas }}</i>
     <form name="frmEnviar" action="/pesquisa/inserirAvaliador" method="POST"><br>
       <b>Projeto</b>:
       <select name="txtProjeto" required="required">
         {% for linha in listaProjetos %}
-        <option value="{{ linha[0] }}">{{ linha[1] }}</option>
+        <option value="{{ linha[0] }}">(Id: {{ linha[0] }}){{ linha[1] }} - Concluídas: {{ linha[2] }} - Envios: {{ linha[3] }}</option>
         {% endfor %}
       </select>
       <br>
@@ -18,6 +19,7 @@
       <div style="text-align: left;"><input name="btnEnviar" value="Enviar" type="submit"><br>
       </div>
       <br>
+
     </form>
     <p><br>
     </p>
