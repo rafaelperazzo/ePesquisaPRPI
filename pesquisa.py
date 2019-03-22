@@ -530,6 +530,8 @@ def getPaginaAvaliacao():
         links = links + "<input type=\"hidden\" id=\"token\" name=\"token\" value=\"" + tokenAvaliacao + "\">"
         links = Markup(links)
         if naoEstaFinalizado(tokenAvaliacao):
+            consulta = "UPDATE avaliacoes SET aceitou=1 WHERE token=\"" + tokenAvaliacao + "\""
+            atualizar(consulta)
             return render_template('avaliacao.html',arquivos=links)
         else:
             logging.debug("[AVALIACAO] Tentativa de reavaliar projeto")
@@ -575,12 +577,11 @@ def consultar(consulta):
     conn.close()
     return (linhas)
 
-## TODO: Enviar email com titulo e autor do projeto ao inves do token
 @app.route("/recusarConvite", methods=['GET', 'POST'])
 def recusarConvite():
     if request.method == "GET":
         tokenAvaliacao = str(request.args.get('token'))
-        consulta = "UPDATE avaliacoes set aceitou=0 WHERE token=\"" + tokenAvaliacao + "\""
+        consulta = "UPDATE avaliacoes SET aceitou=0 WHERE token=\"" + tokenAvaliacao + "\""
         atualizar(consulta)
         #SELECT editalProjeto.titulo,editalProjeto.nome FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND avaliacoes.token="DL7tueygfszlgqVc2V6HTgN7fSaDjsIPq7O2LpWT"
         #body = "O avaliador de token " + tokenAvaliacao + " recusou o convite de avaliacao."
@@ -597,7 +598,8 @@ def avaliacoesNegadas():
         cursor  = conn.cursor()
         codigoEdital = str(request.args.get('edital'))
         #consulta = "SELECT editalProjeto.id,CONCAT(SUBSTRING(editalProjeto.titulo,1,80),\" - (\",editalProjeto.nome,\" )\"),sum(avaliacoes.finalizado) as soma FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND editalProjeto.categoria=1 AND editalProjeto.valendo=1 AND editalProjeto.tipo=" + codigoEdital + " GROUP by avaliacoes.idProjeto order by soma"
-        consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE (resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes)<2 AND resumoGeralAvaliacoes.tipo=" + codigoEdital + " order by resultado"
+        #consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE (resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes)<2 AND resumoGeralAvaliacoes.tipo=" + codigoEdital + " order by resultado"
+        consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + " ORDER BY resultado"
         try:
             cursor.execute(consulta)
             linha = cursor.fetchall()
@@ -619,7 +621,7 @@ def inserirAvaliador():
         token = id_generator(40)
         idProjeto = int(request.form['txtProjeto'])
         avaliador1_email = str(request.form['txtEmail'])
-        consulta = "INSERT INTO avaliacoes (avaliador,token,idProjeto) VALUES (\"" + avaliador1_email + "\", \"" + token + "\", " + str(idProjeto) + ")"
+        consulta = "INSERT INTO avaliacoes (aceitou,avaliador,token,idProjeto) VALUES (-1,\"" + avaliador1_email + "\", \"" + token + "\", " + str(idProjeto) + ")"
         atualizar(consulta)
         return("Avaliador cadastrado com sucesso.")
     else:
@@ -630,9 +632,18 @@ def inserirAvaliador():
 def estatisticas():
     if request.method == "GET":
         codigoEdital = str(request.args.get('edital'))
+        #Resumo Geral
+        consulta = "SELECT * FROM resumoGeralAvaliacoes WHERE tipo=" + codigoEdital
+        conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+        conn.select_db('pesquisa')
+        cursor  = conn.cursor()
+        cursor.execute(consulta)
+        resumoGeral = cursor.fetchall()
         #Projetos aprovados
 
         #Projetos que faltam avaliacoes
+        #return(render_template('estatisticas.html',linhasResumo=resumoGeral))
+        return(codigoEdital)
     else:
         return("OK")
 

@@ -120,12 +120,13 @@ def enviarEmail(to,subject,body,html):
         logging.debug("Erro ao enviar e-mail: " + str(e))
         return (False)
 
-def enviarLinksParaAvaliadores():
+def enviarLinksParaAvaliadores(codigoEdital):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
-    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou=1 and a.enviado=0 and e.categoria=1"
+    #WHERE datediff(current_timestamp(),data_envio)>10
+    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria,e.tipo FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou!=0 AND e.categoria=1 AND e.tipo=" + codigoEdital
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     for linha in linhas:
@@ -166,7 +167,7 @@ def enviarLinksParaAvaliadores():
         if envios==0:
             enviarEmail(email,"[UFCA - Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html)
         else:
-            enviarEmail(email,"[UFCA - LEMBRETE de Solicitação de Avaliação de Projeto de Pesquisa] - Mudança de link",mensagem,html)
+            enviarEmail(email,"[UFCA - LEMBRETE de Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html)
         print("E-mail enviado para: " + email)
         enviado = enviado + 1
         consulta_enviado = "UPDATE avaliacoes SET enviado=" + str(enviado) + " WHERE id=" + id_avaliacao
@@ -194,5 +195,11 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 #GERAR LINK PARA AVALIADORES
+codigoEdital = "0"
 gerarLinkAvaliacao()
-enviarLinksParaAvaliadores()
+if (len(sys.argv)>1):
+    codigoEdital = str(sys.argv[1])
+    enviarLinksParaAvaliadores(codigoEdital)
+else:
+    enviarLinksParaAvaliadores("1")
+enviarEmail("rafael.mota@ufca.edu.br","[Cron Executado]","",u"Edital: [" + codigoEdital +u"]<BR> Solicitação de Avaliação para avaliadores que não finalizaram.")
