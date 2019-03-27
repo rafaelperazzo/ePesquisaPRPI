@@ -22,3 +22,9 @@ SELECT editalProjeto.tipo,editalProjeto.id,editalProjeto.titulo, editalProjeto.u
 SELECT editalProjeto.tipo,editalProjeto.id,editalProjeto.titulo, editalProjeto.ua, editalProjeto.nome, (SELECT count(avaliacoes.recomendacao) FROM avaliacoes WHERE avaliacoes.idProjeto=editalProjeto.id and avaliacoes.recomendacao=1) as aceites, (SELECT count(avaliacoes.recomendacao) FROM avaliacoes WHERE avaliacoes.idProjeto=editalProjeto.id and avaliacoes.recomendacao=0) as rejeicoes, (SELECT count(avaliacoes.recomendacao) FROM avaliacoes WHERE avaliacoes.idProjeto=editalProjeto.id and avaliacoes.recomendacao=-1) as indefinido,(SELECT count(avaliacoes.aceitou) FROM avaliacoes WHERE avaliacoes.idProjeto=editalProjeto.id and avaliacoes.aceitou=0) as negadaAvaliacao FROM editalProjeto WHERE editalProjeto.categoria=1 and editalProjeto.valendo=1 ORDER BY editalProjeto.ua, aceites DESC, editalProjeto.titulo
 
 SELECT idProjeto,avaliador FROM avaliacoes WHERE finalizado=0 AND DATEDIFF(CURRENT_TIMESTAMP(),data_envio)=7;
+
+#RESUMO GERAL - CLASSIFICACAO
+ (SELECT tipo,id,titulo, ua, nome, scorelattes as score, 0 as aceites,0 as rejeicoes,0 as indefinido,0 as negadaAvaliacao, bolsas,bolsas_concedidas FROM editalProjeto WHERE categoria=0 and valendo=1) 
+ UNION 
+ (SELECT tipo,id,titulo,ua,nome,score, aceites,rejeicoes,indefinido,negadaAvaliacao, (SELECT bolsas FROM editalProjeto WHERE editalProjeto.id = resumoGeralAvaliacoes.id) as bolsas, (SELECT bolsas_concedidas FROM editalProjeto WHERE editalProjeto.id = resumoGeralAvaliacoes.id) as bolsas_concedidas FROM resumoGeralAvaliacoes WHERE aceites>=2 AND aceites>rejeicoes)
+ ORDER BY ua,score DESC,nome

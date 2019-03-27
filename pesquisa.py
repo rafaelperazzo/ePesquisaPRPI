@@ -627,25 +627,132 @@ def inserirAvaliador():
     else:
         return("OK")
 
-## TODO: Finalizar as estatisticas
+#Retorna a quantidade de linhas da consulta
+def quantidades(consulta):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    cursor.execute(consulta)
+    total = cursor.rowcount
+    conn.close()
+    return (total)
+
+## TODO: Finalizar as estatisticas - Projetos aprovados devem ser vir da tabela editalProjeto
 @app.route("/estatisticas", methods=['GET', 'POST'])
 def estatisticas():
     if request.method == "GET":
         codigoEdital = str(request.args.get('edital'))
         #Resumo Geral
-        consulta = "SELECT * FROM resumoGeralAvaliacoes WHERE tipo=" + codigoEdital
+        consulta = "SELECT * FROM resumoGeralAvaliacoes WHERE tipo=" + codigoEdital + " ORDER BY ua, score DESC"
         conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
         conn.select_db('pesquisa')
         cursor  = conn.cursor()
         cursor.execute(consulta)
         resumoGeral = cursor.fetchall()
-        #Projetos aprovados
-
-        #Projetos que faltam avaliacoes
-        #return(render_template('estatisticas.html',linhasResumo=resumoGeral))
-        return(codigoEdital)
+        consulta = "SELECT * FROM resumoGeralAvaliacoes WHERE aceites>=2 AND aceites>rejeicoes AND tipo=" + codigoEdital + " ORDER BY ua, score DESC"
+        cursor.execute(consulta)
+        aprovados = cursor.fetchall()
+        consulta = "SELECT * FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + " ORDER BY ua, score DESC"
+        #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria,e.tipo FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou!=0 AND e.categoria=1 AND e.tipo=1 AND a.idProjeto IN (SELECT id FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + ")"
+        cursor.execute(consulta)
+        pendentes = cursor.fetchall()
+        consulta = "SELECT * FROM resumoGeralAvaliacoes WHERE rejeicoes>=2 AND rejeicoes>aceites AND tipo=" + codigoEdital + " ORDER BY ua, score DESC"
+        cursor.execute(consulta)
+        reprovados = cursor.fetchall()
+        consulta = "SELECT nome FROM editais WHERE id=" + codigoEdital
+        cursor.execute(consulta)
+        nomeEdital = cursor.fetchall()
+        edital = ""
+        if cursor.rowcount==1:
+            for linha in nomeEdital:
+                edital = linha[0]
+        else:
+            edital=u"CÓDIGO DE EDITAL INVÁLIDO"
+        conn.close()
+        return(render_template('estatisticas.html',nomeEdital=edital,linhasResumo=resumoGeral,projetosAprovados=aprovados,projetosPendentes=pendentes,projetosReprovados=reprovados))
+        #return(codigoEdital)
     else:
         return("OK")
+
+'''
+demanda: Quantidade de bolsas por unidade academica
+dados: projetos ordenados por Unidade Academica e Lattes
+'''
+def distribuir_bolsas(demanda,dados):
+    a = 1
+    #ZERANDO as concessões
+    consulta = "UPDATE editalProjeto SET bolsas_concedidas=0"
+    atualizar(consulta)
+    #Iniciando a distribuição
+    continua = True
+    while (continua):
+        for linha in dados:
+            ua = str(linha[3]) #Unidade Academica
+            idProjeto = linha[1] #ID do projeto
+            solicitadas = int(linha[10]) #Quantidade de bolsas solicitadas
+            concedidas = int(linha[11])
+            if (demanda[ua]>0): #Se a unidade ainda possui bolsas disponíveis
+                if (solicitadas-concedidas)>0: #Se ainda existe demanda a ser atendida
+                    consulta = "UPDATE editalProjeto SET bolsas_concedidas=bolsas_concedidas+1 WHERE id=" + str(idProjeto)
+                    logging.debug(consulta)
+                    atualizar(consulta)
+                    demanda[ua] = demanda[ua] - 1
+        #Verificar se ainda tem bolsas disponíveis
+        continua = False
+
+@app.route("/resultados", methods=['GET', 'POST'])
+def resultados():
+    if request.method == "GET":
+        codigoEdital = str(request.args.get('edital'))
+        #Resumo Geral
+        consulta = "SELECT * FROM resumoGeralClassificacao WHERE tipo=" + codigoEdital + " ORDER BY ua, score DESC"
+        conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+        conn.select_db('pesquisa')
+        cursor  = conn.cursor()
+        cursor.execute(consulta)
+        total = cursor.rowcount
+        resumoGeral = cursor.fetchall()
+        consulta = "SELECT nome,deadline_avaliacao FROM editais WHERE id=" + codigoEdital
+        cursor.execute(consulta)
+        nomeEdital = cursor.fetchall()
+        edital = ""
+        data_final_avaliacoes = ""
+        if cursor.rowcount==1:
+            for linha in nomeEdital:
+                edital = linha[0]
+                data_final_avaliacoes = str(linha[1])
+        else:
+            edital=u"CÓDIGO DE EDITAL INVÁLIDO"
+
+        #Recuperando a quantidade de bolsas do edital: qtde_bolsas
+        consulta = "SELECT quantidade_bolsas FROM editais WHERE id=" + codigoEdital
+        cursor.execute(consulta)
+        info_edital = cursor.fetchall()
+        if cursor.rowcount==1:
+            for linha in info_edital:
+                qtde_bolsas = linha[0]
+        else:
+            qtde_bolsas=0
+        qtde_bolsas = str(qtde_bolsas)
+        #Recuperando total de projetos concorrento no editalProjeto: total_projetos
+        total_projetos = str(quantidades("SELECT id FROM editalProjeto WHERE valendo=1 and tipo=" + codigoEdital))
+        bolsas_disponiveis = "round((count(id)/" + total_projetos + ")*" + qtde_bolsas + ") "
+        #Recuperando a demanda e oferta de Bolsas
+        consulta = "SELECT ua,count(id)," + bolsas_disponiveis +  "as total_bolsas FROM editalProjeto WHERE valendo=1 AND tipo=" + codigoEdital +  " GROUP BY ua"
+        cursor.execute(consulta)
+        demanda = cursor.fetchall()
+        #Distribuição de cota de bolsas
+        unidades = {}
+        for linha in demanda:
+            unidades[str(linha[0])] = int(linha[2])
+        distribuir_bolsas(unidades,resumoGeral)
+        #Finalizando...
+        conn.close()
+        return(render_template('resultados.html',nomeEdital=edital,linhasResumo=resumoGeral,totalGeral=total,demanda=demanda,bolsas=qtde_bolsas))
+        #return(codigoEdital)
+    else:
+        return("OK")
+
 
 if __name__ == "__main__":
     app.run()

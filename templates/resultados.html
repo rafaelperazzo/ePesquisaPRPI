@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Resultados em tempo real</title>
+    <style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+</style>
+  </head>
+  <body>
+    <center><p><b><h1>RESULTADO em tempo real</b></h1></p></center>
+    <br><center><i>Resultados gerados automaticamente segundo as regras definidas em edital, sem intervenção humana. Código fonte disponível em <a href="http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/">http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/</a></i></center>
+    <hr>
+    <p><b><h2>{{ nomeEdital }}</h2><br></b></p>
+    <h2>Total de projetos aprovados: {{ totalGeral }}</h2>
+    <h2>Total de bolsas disponíveis: {{ bolsas }}</h2>
+    <table style="width:100%">
+      <caption><h2>Demanda/Oferta</h2></caption>
+      <tr>
+        <th>Unidade Academica</th><th>Total de projetos aprovados</th><th>Total de bolsas concedidas</th>
+      </tr>
+      {% for linha in demanda %}
+      <tr>
+        <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td><td>{{ linha[2] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <hr><br>
+    <table style="width:100%">
+      <caption><h2>Resultado Parcial</h2></caption>
+      <tr>
+        <th>Id do Projeto</th><th>Título</th><th>Unidade Academica</th><th>Proponente</th><th>Score Lattes</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th>
+      </tr>
+      {% for linha in linhasResumo %}
+      <tr>
+        <td>{{ linha[1] }}</td><td>{{ linha[2] }}</td><td>{{ linha[3] }}</td><td>{{ linha[4] }}</td><td>{{ linha[5] }}</td><td>{{ linha[10] }}</td><td>{{ linha[11] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+
+
+  </body>
+</html>
