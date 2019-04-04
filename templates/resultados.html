@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <title>Resultados em tempo real</title>
+    <title>{{ titulo }}</title>
     <style>
 table {
   font-family: arial, sans-serif;
@@ -22,10 +22,14 @@ tr:nth-child(even) {
 </style>
   </head>
   <body>
-    <center><p><b><h1>RESULTADO em tempo real</b></h1></p></center>
-    <br><center><i>Resultados gerados automaticamente segundo as regras definidas em edital, sem intervenção humana. Código fonte disponível em <a href="http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/">http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/</a></i></center>
+    <center><img src="{{ url_for('static', filename='cabecalho.png')}}" width="100" height="150" alt=""></center>
+    <center><b>Ministério da Educação<br>
+            Universidade Federal do Cariri<br>
+            Pró-reitoria de Pesquisa, Pós-graduação e Inovação</b></center><br><hr>
+    <center><p><b><h1>RESULTADOS</b></h1></p></center>
+    <br><center><i>Informações geradas automaticamente segundo as regras definidas em edital, sem intervenção humana. Código fonte disponível em <a href="http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/">http://prpi.ufca.edu.br/</a></i></center>
     <hr>
-    <p><b><h2>{{ nomeEdital }}</h2><br></b></p>
+    <p><b><h2>{{ nomeEdital }}</h2></b></p>
     <h2>Total de projetos aprovados: {{ totalGeral }}</h2>
     <h2>Total de bolsas disponíveis: {{ bolsas }}</h2>
     <table style="width:100%">
@@ -39,9 +43,23 @@ tr:nth-child(even) {
       </tr>
       {% endfor %}
     </table>
+
     <hr><br>
     <table style="width:100%">
-      <caption><h2>Resultado Parcial</h2></caption>
+      <caption><h2>Totais</h2></caption>
+      <tr>
+        <th>Unidade Academica</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th><th>Percentual de atendimento</th>
+      </tr>
+      {% for linha in somatorios %}
+      <tr>
+        <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td><td>{{ linha[2] }}</td><td>{{ linha[3] }}%</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <hr><br>
+    <table style="width:100%">
+      <caption><h2>{{ titulo }}</h2></caption>
       <tr>
         <th>Id do Projeto</th><th>Título</th><th>Unidade Academica</th><th>Proponente</th><th>Score Lattes</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th>
       </tr>
@@ -52,7 +70,17 @@ tr:nth-child(even) {
       {% endfor %}
     </table>
 
-
+    <br>
+     <div align="right">
+      Juazeiro do Norte, {{data}}
+    </div>
+    <br><br>
+    <center><img src="{{ url_for('static', filename='assinatura_rafael.png')}}" width="254" height="49" alt=""></center>
+    <center>___________________________________</center><br>
+    <center>RAFAEL PERAZZO BARBOSA MOTA</center><br>
+    <center>COORDENADOR DE PESQUISA</center><br>
+    <center>SIAPE: 1570709</center>
+    <center><img src="{{ url_for('static', filename='rodape.png')}}" width="100%" height="140" alt="" align="left"></center>
 
   </body>
 </html>

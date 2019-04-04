@@ -30,7 +30,7 @@ from datetime import date
 from Weights import weights
 from Bounds import bounds
 
-WORKING_DIR='/home/perazzo/flask/projetos/pesquisa/modules/'
+WORKING_DIR='/home/perazzo/pesquisa/modules/'
 
 weights = {
     'FORMACAO-ACADEMICA-TITULACAO' : {'POS-DOUTORADO': 10, 'LIVRE-DOCENCIA': 8, 'DOUTORADO': 7, 'MESTRADO': 3},

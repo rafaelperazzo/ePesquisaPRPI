@@ -50,7 +50,7 @@ def removerAspas(texto):
 
 def calcularScoreLattes(tipo,area,since,until,arquivo):
     #Tipo = 0: Apenas pontuacao; Tipo = 1: Sumário
-    pasta = "/home/perazzo/flask/projetos/pesquisa/modules/"
+    pasta = "/home/perazzo/pesquisa/modules/"
     if tipo==1:
         command = "python " + pasta + "scorerun.py -v -p 2016 -s " +  since + " -u " + until + " \"" + area + "\" " +  arquivo
     else:
@@ -107,7 +107,7 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def getData():
-    Meses=('janeiro','fevereiro','mar','abril','maio','junho',
+    Meses=('janeiro','fevereiro',u'março','abril','maio','junho',
        'julho','agosto','setembro','outubro','novembro','dezembro')
     agora = datetime.date.today()
     dia = agora.day
@@ -507,36 +507,52 @@ def naoEstaFinalizado(token):
     else:
         return (False)
 
+def podeAvaliar(idProjeto):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    #consulta = "SELECT deadline_avaliacao,CURRENT_TIMESTAMP() FROM editais WHERE CURRENT_TIMESTAMP()<deadline_avaliacao AND id=" + codigoEdital
+    consulta = "SELECT e.id as codigoEdital,e.deadline_avaliacao,p.id FROM editais e, editalProjeto p WHERE p.tipo=e.id and deadline_avaliacao>CURRENT_TIMESTAMP() AND p.id=" + idProjeto
+    cursor.execute(consulta)
+    total = cursor.rowcount
+    conn.close()
+    if (total==0): #Edital com avaliacoes encerradas
+        return(False)
+    else: #Edital com avaliacoes em andamento
+        return(True)
+
 #Gerar pagina de avaliacao para o avaliador
 @app.route("/avaliacao", methods=['GET', 'POST'])
 def getPaginaAvaliacao():
     if request.method == "GET":
         idProjeto = str(request.args.get('id'))
-        tokenAvaliacao = str(request.args.get('token'))
-        arquivos = getFiles(idProjeto)
-        if str(arquivos[0])!="0":
-            link_projeto = SITE + str(arquivos[0])
-        if str(arquivos[1])!="0":
-            link_plano1 = SITE + str(arquivos[1])
-        if str(arquivos[2])!="0":
-            link_plano2 = SITE + str(arquivos[2])
-        links = ""
-        if 'link_projeto' in locals():
-            links = links + "<a href=\"" + link_projeto + "\">PROJETO</a><BR>"
-        if 'link_plano1' in locals():
-            links = links + "<a href=\"" + link_plano1 + "\">PLANO DE TRABALHO 1</a><BR>"
-        if 'link_plano2' in locals():
-            links = links + "<a href=\"" + link_plano2 + "\">PLANO DE TRABALHO 2</a><BR>"
-        links = links + "<input type=\"hidden\" id=\"token\" name=\"token\" value=\"" + tokenAvaliacao + "\">"
-        links = Markup(links)
-        if naoEstaFinalizado(tokenAvaliacao):
-            consulta = "UPDATE avaliacoes SET aceitou=1 WHERE token=\"" + tokenAvaliacao + "\""
-            atualizar(consulta)
-            return render_template('avaliacao.html',arquivos=links)
+        if podeAvaliar(idProjeto): #Se ainda está no prazo para receber avaliações
+            tokenAvaliacao = str(request.args.get('token'))
+            arquivos = getFiles(idProjeto)
+            if str(arquivos[0])!="0":
+                link_projeto = SITE + str(arquivos[0])
+            if str(arquivos[1])!="0":
+                link_plano1 = SITE + str(arquivos[1])
+            if str(arquivos[2])!="0":
+                link_plano2 = SITE + str(arquivos[2])
+            links = ""
+            if 'link_projeto' in locals():
+                links = links + "<a href=\"" + link_projeto + "\">PROJETO</a><BR>"
+            if 'link_plano1' in locals():
+                links = links + "<a href=\"" + link_plano1 + "\">PLANO DE TRABALHO 1</a><BR>"
+            if 'link_plano2' in locals():
+                links = links + "<a href=\"" + link_plano2 + "\">PLANO DE TRABALHO 2</a><BR>"
+            links = links + "<input type=\"hidden\" id=\"token\" name=\"token\" value=\"" + tokenAvaliacao + "\">"
+            links = Markup(links)
+            if naoEstaFinalizado(tokenAvaliacao):
+                consulta = "UPDATE avaliacoes SET aceitou=1 WHERE token=\"" + tokenAvaliacao + "\""
+                atualizar(consulta)
+                return render_template('avaliacao.html',arquivos=links)
+            else:
+                logging.debug("[AVALIACAO] Tentativa de reavaliar projeto")
+                return("Projeto já foi avaliado! Não é possível modificar a avaliação!")
         else:
-            logging.debug("[AVALIACAO] Tentativa de reavaliar projeto")
-            return("Projeto já foi avaliado! Não é possível modificar a avaliação!")
-
+            return("Prazo de avaliação expirado!")
 #Gravar avaliacao gerada pelo avaliador
 @app.route("/avaliar", methods=['GET', 'POST'])
 def enviarAvaliacao():
@@ -564,7 +580,45 @@ def enviarAvaliacao():
             logging.error("[AVALIACAO] ERRO ao gravar a avaliação: " + token)
             return("Não foi possível gravar a avaliação. Favor entrar contactar pesquisa.prpi@ufca.edu.br.")
         data_agora = getData()
-        return(render_template('declaracao_avaliador.html',nome=nome_avaliador,data=data_agora))
+        consulta = "SELECT editais.id,editais.nome FROM editais,avaliacoes,editalProjeto WHERE avaliacoes.idProjeto=editalProjeto.id AND editalProjeto.tipo=editais.id AND avaliacoes.token=\"" + token + "\""
+        linhas = consultar(consulta)
+        for linha in linhas:
+            descricaoEdital = unicode(linha[1])
+        return(render_template('declaracao_avaliador.html',nome=nome_avaliador,data=data_agora,edital=descricaoEdital))
+    else:
+        return("OK")
+
+## TODO: Revisar função abaixo
+def descricaoEdital(codigoEdital):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    consulta = "SELECT id,nome FROM editais WHERE id=" + codigoEdital
+    cursor.execute(consulta)
+    linhas = cursor.fetchall()
+    nomeEdital = "EDITAL NAO DEFINIDO"
+    for linha in linhas:
+        nomeEdital = unicode(linha[1])
+    conn.close()
+    return (nomeEdital)
+
+#Gerar declaração do avaliador
+@app.route("/declaracaoAvaliador", methods=['GET', 'POST'])
+def getDeclaracaoAvaliador():
+    if request.method == "GET":
+        tokenAvaliacao = str(request.args.get('token'))
+        consulta = "SELECT nome_avaliador FROM avaliacoes WHERE token=\"" + tokenAvaliacao + "\""
+        linhas = consultar(consulta)
+        nome_avaliador = "NAO INFORMADO"
+        for linha in linhas:
+            nome_avaliador = unicode(linha[0])
+        data_agora = getData()
+        #Recuperando descrição do edital
+        consulta = "SELECT editais.id,editais.nome FROM editais,avaliacoes,editalProjeto WHERE avaliacoes.idProjeto=editalProjeto.id AND editalProjeto.tipo=editais.id AND avaliacoes.token=\"" + tokenAvaliacao + "\""
+        linhas = consultar(consulta)
+        for linha in linhas:
+            descricaoEdital = unicode(linha[1])
+        return(render_template('declaracao_avaliador.html',nome=nome_avaliador,data=data_agora,edital=descricaoEdital))
     else:
         return("OK")
 
@@ -674,15 +728,32 @@ def estatisticas():
     else:
         return("OK")
 
+
+def cotaEstourada(codigoEdital,siape):
+    consulta = "SELECT ua,nome,siape FROM resumoGeralClassificacao WHERE bolsas_concedidas>=1 AND siape=" + siape + " AND siape IN (SELECT siape FROM resumoGeralClassificacao WHERE resumoGeralClassificacao.tipo=" + codigoEdital + " AND resumoGeralClassificacao.siape IN (SELECT siape FROM edital02_2018 WHERE situacao=\"ATIVO\" and modalidade=\"PIBIC\" GROUP BY siape HAVING count(id)=2 ORDER BY ua,orientador)) ORDER BY ua,nome"
+    total = quantidades(consulta)
+    if (total>0):
+        return (True)
+    else:
+        return (False)
+
 '''
 demanda: Quantidade de bolsas por unidade academica
 dados: projetos ordenados por Unidade Academica e Lattes
 '''
 def distribuir_bolsas(demanda,dados):
-    a = 1
-    #ZERANDO as concessões
-    consulta = "UPDATE editalProjeto SET bolsas_concedidas=0"
-    atualizar(consulta)
+    ## TODO: Incluir condição de cruzamento de dados
+    '''
+    Lista de quem tem 2 bolsas PIBIC, e não pode ganhar mais nenhuma bolsa!
+    SELECT tipo,id,titulo,ua,nome FROM resumoGeralClassificacao WHERE resumoGeralClassificacao.tipo=1 AND resumoGeralClassificacao.siape IN (SELECT siape FROM edital02_2018 WHERE situacao="ATIVO" and modalidade="PIBIC" GROUP BY siape HAVING count(id)=2 ORDER BY ua,orientador)
+
+    BOLSAS PIBIC POR ORIENTADOR
+    SELECT siape,orientador,count(id),situacao FROM edital02_2018 WHERE situacao="ATIVO" and modalidade="PIBIC" GROUP BY siape HAVING count(id)=2 ORDER BY orientador;
+
+    QUEM TEM BOLSA CONCEDIDA, MAS NÃO PODE TER!
+    SELECT ua,nome,siape FROM resumoGeralClassificacao WHERE bolsas_concedidas>=1 AND siape IN (SELECT siape FROM resumoGeralClassificacao WHERE resumoGeralClassificacao.tipo=1 AND resumoGeralClassificacao.siape IN (SELECT siape FROM edital02_2018 WHERE situacao="ATIVO" and modalidade="PIBIC" GROUP BY siape HAVING count(id)=2 ORDER BY ua,orientador)) ORDER BY ua,nome
+
+    '''
     #Iniciando a distribuição
     continua = True
     while (continua):
@@ -690,21 +761,51 @@ def distribuir_bolsas(demanda,dados):
             ua = str(linha[3]) #Unidade Academica
             idProjeto = linha[1] #ID do projeto
             solicitadas = int(linha[10]) #Quantidade de bolsas solicitadas
-            concedidas = int(linha[11])
+            concedidas = int(linha[11]) #Quantidade de bolsas concedidas
+            siape = str((linha[12]))  #Siape
+            codigoEdital = str(linha[0]) #Codigo do Edital
             if (demanda[ua]>0): #Se a unidade ainda possui bolsas disponíveis
                 if (solicitadas-concedidas)>0: #Se ainda existe demanda a ser atendida
                     consulta = "UPDATE editalProjeto SET bolsas_concedidas=bolsas_concedidas+1 WHERE id=" + str(idProjeto)
-                    logging.debug(consulta)
+                    #logging.debug(consulta)
                     atualizar(consulta)
                     demanda[ua] = demanda[ua] - 1
-        #Verificar se ainda tem bolsas disponíveis
+        ## TODO: Ver abaixo
+        #Verificar se ainda tem bolsas disponíveis para redistribuir dentro das unidades
         continua = False
+
+def executarSelect(consulta):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    cursor.execute(consulta)
+    total = cursor.rowcount
+    resultado = cursor.fetchall()
+    conn.close()
+    return (resultado,total)
+
+def avaliacoesEncerradas(codigoEdital):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    consulta = "SELECT deadline_avaliacao,CURRENT_TIMESTAMP() FROM editais WHERE CURRENT_TIMESTAMP()<deadline_avaliacao AND id=" + codigoEdital
+    cursor.execute(consulta)
+    total = cursor.rowcount
+    conn.close()
+    if (total>0): #Edital com avaliacoes encerradas
+        return(False)
+    else: #Edital com avaliacoes em andamento
+        return(True)
+
 
 @app.route("/resultados", methods=['GET', 'POST'])
 def resultados():
     if request.method == "GET":
+
+        #Recuperando o código do edital
         codigoEdital = str(request.args.get('edital'))
-        #Resumo Geral
+
+        #Recuperando o Resumo Geral
         consulta = "SELECT * FROM resumoGeralClassificacao WHERE tipo=" + codigoEdital + " ORDER BY ua, score DESC"
         conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
         conn.select_db('pesquisa')
@@ -712,44 +813,67 @@ def resultados():
         cursor.execute(consulta)
         total = cursor.rowcount
         resumoGeral = cursor.fetchall()
-        consulta = "SELECT nome,deadline_avaliacao FROM editais WHERE id=" + codigoEdital
+
+        #Recuperando dados do edital
+        consulta = "SELECT nome,deadline_avaliacao,quantidade_bolsas FROM editais WHERE id=" + codigoEdital
         cursor.execute(consulta)
         nomeEdital = cursor.fetchall()
         edital = ""
         data_final_avaliacoes = ""
+        qtde_bolsas = 0
         if cursor.rowcount==1:
             for linha in nomeEdital:
-                edital = linha[0]
+                edital = str(linha[0])
                 data_final_avaliacoes = str(linha[1])
+                logging.debug(data_final_avaliacoes)
+                qtde_bolsas = int(linha[2])
         else:
             edital=u"CÓDIGO DE EDITAL INVÁLIDO"
-
-        #Recuperando a quantidade de bolsas do edital: qtde_bolsas
-        consulta = "SELECT quantidade_bolsas FROM editais WHERE id=" + codigoEdital
-        cursor.execute(consulta)
-        info_edital = cursor.fetchall()
-        if cursor.rowcount==1:
-            for linha in info_edital:
-                qtde_bolsas = linha[0]
-        else:
-            qtde_bolsas=0
         qtde_bolsas = str(qtde_bolsas)
-        #Recuperando total de projetos concorrento no editalProjeto: total_projetos
-        total_projetos = str(quantidades("SELECT id FROM editalProjeto WHERE valendo=1 and tipo=" + codigoEdital))
+
+        #Recuperando total de projetos: total_projetos e calculando total de bolsas por unidade
+        total_projetos = str(quantidades("SELECT id FROM resumoGeralClassificacao WHERE tipo=" + codigoEdital))
         bolsas_disponiveis = "round((count(id)/" + total_projetos + ")*" + qtde_bolsas + ") "
+
         #Recuperando a demanda e oferta de Bolsas
         consulta = "SELECT ua,count(id)," + bolsas_disponiveis +  "as total_bolsas FROM editalProjeto WHERE valendo=1 AND tipo=" + codigoEdital +  " GROUP BY ua"
         cursor.execute(consulta)
         demanda = cursor.fetchall()
+
+        #ZERANDO as concessões
+        consulta = "UPDATE editalProjeto SET bolsas_concedidas=0 WHERE tipo=" + codigoEdital
+        atualizar(consulta)
+
+        #Recalculando resumoGeral
+        consulta = "SELECT * FROM resumoGeralClassificacao WHERE tipo=" + codigoEdital + " ORDER BY ua, score DESC"
+        resumoGeral,total = executarSelect(consulta)
+
         #Distribuição de cota de bolsas
         unidades = {}
         for linha in demanda:
             unidades[str(linha[0])] = int(linha[2])
         distribuir_bolsas(unidades,resumoGeral)
+
+        ## TODO: Redistribuir bolsas remanescentes baseado na classificação geral pelo lattes
+
+        #Recalculando resumoGeral após distribuição
+        consulta = "SELECT * FROM resumoGeralClassificacao WHERE tipo=" + codigoEdital + " ORDER BY ua, score DESC"
+        resumoGeral,total = executarSelect(consulta)
+
+        #Total de bolsas distribuídas por unidade academica
+        consulta = "SELECT ua,sum(bolsas) as solicitadas, sum(bolsas_concedidas) as concedidas,(sum(bolsas_concedidas)/sum(bolsas))*100 as percentual FROM resumoGeralClassificacao WHERE tipo=" + codigoEdital + " GROUP BY ua ORDER BY ua"
+        cursor.execute(consulta)
+        somatorios = cursor.fetchall()
+
+        #Verificando se as avaliacoes estão encerradas
+        if avaliacoesEncerradas(codigoEdital):
+            titulo = "Resultado Preliminar"
+        else:
+            titulo = "Resultado Parcial"
         #Finalizando...
         conn.close()
-        return(render_template('resultados.html',nomeEdital=edital,linhasResumo=resumoGeral,totalGeral=total,demanda=demanda,bolsas=qtde_bolsas))
-        #return(codigoEdital)
+        data_agora = getData()
+        return(render_template('resultados.html',nomeEdital=edital,linhasResumo=resumoGeral,totalGeral=total,demanda=demanda,bolsas=qtde_bolsas,somatorios=somatorios,titulo=titulo,data=data_agora))
     else:
         return("OK")
 
