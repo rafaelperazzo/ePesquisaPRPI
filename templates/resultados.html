@@ -27,7 +27,9 @@ tr:nth-child(even) {
             Universidade Federal do Cariri<br>
             Pró-reitoria de Pesquisa, Pós-graduação e Inovação</b></center><br><hr>
     <center><p><b><h1>RESULTADOS</b></h1></p></center>
-    <br><center><i>Informações geradas automaticamente segundo as regras definidas em edital, sem intervenção humana. Código fonte disponível em <a href="http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/">http://prpi.ufca.edu.br/</a></i></center>
+    <br><center><i>{{ mensagem }}</i></center><br>
+    <h3>Formulário de recurso: <a href="{{ recursos }}">CLIQUE AQUI</a></h3><br>
+    <h3>Página com todas as informações sobre o edital: <a href="{{ link }}">CLIQUE AQUI</a></h3><br>
     <hr>
     <p><b><h2>{{ nomeEdital }}</h2></b></p>
     <h2>Total de projetos aprovados: {{ totalGeral }}</h2>
@@ -61,11 +63,11 @@ tr:nth-child(even) {
     <table style="width:100%">
       <caption><h2>{{ titulo }}</h2></caption>
       <tr>
-        <th>Id do Projeto</th><th>Título</th><th>Unidade Academica</th><th>Proponente</th><th>Score Lattes</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th>
+        <th>Id do Projeto</th><th>Título</th><th>Unidade Academica</th><th>Proponente</th><th>Score Lattes</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th><th>Comentário</th>
       </tr>
       {% for linha in linhasResumo %}
       <tr>
-        <td>{{ linha[1] }}</td><td>{{ linha[2] }}</td><td>{{ linha[3] }}</td><td>{{ linha[4] }}</td><td>{{ linha[5] }}</td><td>{{ linha[10] }}</td><td>{{ linha[11] }}</td>
+        <td>{{ linha[1] }}</td><td>{{ linha[2] }}</td><td>{{ linha[3] }}</td><td>{{ linha[4] }}</td><td>{{ linha[5] }}</td><td>{{ linha[10] }}</td><td>{{ linha[11] }}</td><td>{{ linha[13] }}</td>
       </tr>
       {% endfor %}
     </table>

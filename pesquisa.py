@@ -50,7 +50,7 @@ def removerAspas(texto):
 
 def calcularScoreLattes(tipo,area,since,until,arquivo):
     #Tipo = 0: Apenas pontuacao; Tipo = 1: Sumário
-    pasta = "/home/perazzo/pesquisa/modules/"
+    pasta = WORKING_DIR
     if tipo==1:
         command = "python " + pasta + "scorerun.py -v -p 2016 -s " +  since + " -u " + until + " \"" + area + "\" " +  arquivo
     else:
@@ -730,10 +730,13 @@ def estatisticas():
 
 
 def cotaEstourada(codigoEdital,siape):
-    consulta = "SELECT ua,nome,siape FROM resumoGeralClassificacao WHERE bolsas_concedidas>=1 AND siape=" + siape + " AND siape IN (SELECT siape FROM resumoGeralClassificacao WHERE resumoGeralClassificacao.tipo=" + codigoEdital + " AND resumoGeralClassificacao.siape IN (SELECT siape FROM edital02_2018 WHERE situacao=\"ATIVO\" and modalidade=\"PIBIC\" GROUP BY siape HAVING count(id)=2 ORDER BY ua,orientador)) ORDER BY ua,nome"
-    total = quantidades(consulta)
-    if (total>0):
-        return (True)
+    if (codigoEdital=='1'): #Situação particular do edital 01: Checar os que tem 2 bolsas no edital 02/2018/CNPQ/UFCA
+        consulta = "SELECT ua,nome,siape FROM resumoGeralClassificacao WHERE tipo=" + codigoEdital + " AND bolsas>0 AND siape=" + siape + " AND siape IN (SELECT siape FROM edital02_2018 WHERE situacao=\"ATIVO\" and modalidade=\"PIBIC\" GROUP BY siape HAVING count(id)=2 ORDER BY orientador) ORDER BY nome"
+        total = quantidades(consulta)
+        if (total>0):
+            return (True)
+        else:
+            return (False)
     else:
         return (False)
 
@@ -751,7 +754,7 @@ def distribuir_bolsas(demanda,dados):
     SELECT siape,orientador,count(id),situacao FROM edital02_2018 WHERE situacao="ATIVO" and modalidade="PIBIC" GROUP BY siape HAVING count(id)=2 ORDER BY orientador;
 
     QUEM TEM BOLSA CONCEDIDA, MAS NÃO PODE TER!
-    SELECT ua,nome,siape FROM resumoGeralClassificacao WHERE bolsas_concedidas>=1 AND siape IN (SELECT siape FROM resumoGeralClassificacao WHERE resumoGeralClassificacao.tipo=1 AND resumoGeralClassificacao.siape IN (SELECT siape FROM edital02_2018 WHERE situacao="ATIVO" and modalidade="PIBIC" GROUP BY siape HAVING count(id)=2 ORDER BY ua,orientador)) ORDER BY ua,nome
+    SELECT id,ua,nome,siape FROM resumoGeralClassificacao WHERE tipo=1 AND bolsas_concedidas>=1 AND siape IN (SELECT siape FROM resumoGeralClassificacao WHERE resumoGeralClassificacao.tipo=1 AND resumoGeralClassificacao.siape IN (SELECT siape FROM edital02_2018 WHERE situacao="ATIVO" and modalidade="PIBIC" GROUP BY siape HAVING count(id)=2 ORDER BY ua,orientador)) ORDER BY ua,nome
 
     '''
     #Iniciando a distribuição
@@ -766,10 +769,18 @@ def distribuir_bolsas(demanda,dados):
             codigoEdital = str(linha[0]) #Codigo do Edital
             if (demanda[ua]>0): #Se a unidade ainda possui bolsas disponíveis
                 if (solicitadas-concedidas)>0: #Se ainda existe demanda a ser atendida
-                    consulta = "UPDATE editalProjeto SET bolsas_concedidas=bolsas_concedidas+1 WHERE id=" + str(idProjeto)
-                    #logging.debug(consulta)
-                    atualizar(consulta)
-                    demanda[ua] = demanda[ua] - 1
+                    if(not cotaEstourada(codigoEdital,siape)): #Se o orientador não estiver com a cota individual estourada
+                        consulta = "UPDATE editalProjeto SET bolsas_concedidas=bolsas_concedidas+1 WHERE id=" + str(idProjeto)
+                        atualizar(consulta)
+                        demanda[ua] = demanda[ua] - 1
+                        consulta = "UPDATE editalProjeto SET obs=\"BOLSA CONCEDIDA\" WHERE id=" + str(idProjeto)
+                        atualizar(consulta)
+                    else: #Se o orientador estiver com a cota estourada
+                        consulta = "UPDATE editalProjeto SET obs=\"BOLSA NÃO CONCEDIDA. ORIENTADOR NÃO PODE ULTRASSAR A COTA DE 2 BOLSISTAS POR MODALIDADE (Anexo XIV da Res. 01/2014/CONSUP, Art. 7 Inciso I)\" WHERE id=" + str(idProjeto)
+                        atualizar(consulta)
+            else: # se a unidade não tem mais bolsas disponíveis em sua cota
+                consulta = "UPDATE editalProjeto SET obs=\"BOLSA NÃO CONCEDIDA. COTA DA UNIDADE ZERADA (Anexo XIV da Res. 01/2014/CONSUP, Art. 7 Inciso II)\" WHERE id=" + str(idProjeto)
+                atualizar(consulta)
         ## TODO: Ver abaixo
         #Verificar se ainda tem bolsas disponíveis para redistribuir dentro das unidades
         continua = False
@@ -815,18 +826,24 @@ def resultados():
         resumoGeral = cursor.fetchall()
 
         #Recuperando dados do edital
-        consulta = "SELECT nome,deadline_avaliacao,quantidade_bolsas FROM editais WHERE id=" + codigoEdital
+        consulta = "SELECT nome,deadline_avaliacao,quantidade_bolsas,mensagem,recursos,link FROM editais WHERE id=" + codigoEdital
         cursor.execute(consulta)
         nomeEdital = cursor.fetchall()
         edital = ""
         data_final_avaliacoes = ""
         qtde_bolsas = 0
+        mensagem = ""
+        recursos = ""
+        link = ""
         if cursor.rowcount==1:
             for linha in nomeEdital:
                 edital = str(linha[0])
                 data_final_avaliacoes = str(linha[1])
                 logging.debug(data_final_avaliacoes)
                 qtde_bolsas = int(linha[2])
+                mensagem = unicode(linha[3])
+                recursos = str(linha[4])
+                link = str(linha[5])
         else:
             edital=u"CÓDIGO DE EDITAL INVÁLIDO"
         qtde_bolsas = str(qtde_bolsas)
@@ -873,7 +890,7 @@ def resultados():
         #Finalizando...
         conn.close()
         data_agora = getData()
-        return(render_template('resultados.html',nomeEdital=edital,linhasResumo=resumoGeral,totalGeral=total,demanda=demanda,bolsas=qtde_bolsas,somatorios=somatorios,titulo=titulo,data=data_agora))
+        return(render_template('resultados.html',link=link,mensagem=mensagem,recursos=recursos,nomeEdital=edital,linhasResumo=resumoGeral,totalGeral=total,demanda=demanda,bolsas=qtde_bolsas,somatorios=somatorios,titulo=titulo,data=data_agora))
     else:
         return("OK")
 
