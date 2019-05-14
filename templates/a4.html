@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- https://github.com/cognitom/paper-css -->  
+<!-- https://github.com/cognitom/paper-css -->
 <html lang="en">
 
 <head>
@@ -7,7 +7,7 @@
   <title>DECLARAÇÃO</title>
 
   <!-- Normalize or reset CSS with your favorite library -->
-  
+
 
   <!-- Load paper.css for happy printing -->
   <link rel="stylesheet" href="{{ url_for('static', filename='paper.css')}}">
@@ -38,20 +38,20 @@
 <BR><BR><BR>
 <center><h1>DECLARAÇÃO</h1></center><br>
 <div align="justify">
-Declaramos para os devidos fins que <b> {{ texto[0] }}</b>, 
-CPF: <b>{{ texto[1] }}</b>, 
-foi bolsista do Programa Institucional de Bolsas de Iniciação Científica 
-({{ texto[2] }}), 
+Declaramos para os devidos fins que <b> {{ texto[0] }}</b>,
+CPF: <b>{{ texto[1] }}</b>,
+foi bolsista do Programa Institucional de Bolsas de Iniciação Científica
+({{ texto[2] }}),
 sob orientação do professor(a) {{ texto[3] }},
-com o projeto intitulado <i>"{{ texto[4] }}"</i>, desempenhando suas atividades 
-com carga horária de 12 horas semanais. 
+com o projeto intitulado <i>"{{ texto[4] }}"</i>, desempenhando suas atividades
+com carga horária de {{texto[8]}} horas semanais. 
 <br><br>
 A participação do(a) discente em questão no referido Projeto de Pesquisa foi de {{ texto[5] }} a {{ texto[6] }}.
 </div>
 <br>
  <div align="right">
   Juazeiro do Norte, {{data}}
-</div> 
+</div>
 <br><br>
 <center><img src="{{ url_for('static', filename='assinatura_rafael.png')}}" width="254" height="49" alt=""></center>
 <center>___________________________________</center><br>

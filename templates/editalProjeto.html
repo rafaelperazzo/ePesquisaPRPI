@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+	  <style>
+table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 100%;
+}
+
+td, th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+</style>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Propostas submetidas a edital</title>
+  </head>
+  <body>
+
+    <h1><b>Propostas submetidas a Edital</b></h1>
+    <h3>{{ descricao }} </h3>
+    <table>
+    <th>Id</th><th>Código do Edital</th><th>Categoria</th><th>Proponente</th><th>E-mail</th><th>UA</th><th>ScoreLattes</th><th>Título</th><th>Projeto</th><th>Plano1</th><th>Plano2</th><th>Lattes</th><th>Comprovantes</th><th>Data</th>
+
+    {% for linha in listaProjetos %}
+    <tr>
+    <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td>
+    <td>
+      {% if linha[2]==1 %}
+      PROJETO NOVO
+      {% endif %}
+      {% if linha[2]==0 %}
+      PROJETO EM ANDAMENTO
+      {% endif %}
+    </td>
+    <td>{{ linha[3] }}</td><td>{{ linha[4] }}</td><td>{{ linha[5] }}</td><td><a href="/pesquisa/lattesDetalhado?id={{ linha[0] }}">{{ linha[6] }}</a></td><td>{{ linha[7] }}</td>
+    <td>
+      {% if linha[8]!="0" %}
+      <a href="/pesquisa/static/files/{{ linha[8] }}">PROJETO</a>
+      {% else %}
+      -
+      {% endif %}
+    </td>
+    <td>
+      {% if linha[9]!="0" %}
+      <a href="/pesquisa/static/files/{{ linha[9] }}">PLANO1</a>
+      {% else %}
+      -
+      {% endif %}
+    </td>
+    <td>
+      {% if linha[10]!="0" %}
+      <a href="/pesquisa/static/files/{{ linha[10] }}">PLANO2</a>
+      {% else %}
+      -
+      {% endif %}
+    </td>
+    <td><a href="/pesquisa/static/files/{{ linha[11] }}">LATTES</a></td>
+    <td>
+      {% if linha[12]!="0" %}
+      <a href="/pesquisa/static/files/{{ linha[12] }}">COMPROVANTES</a>
+      {% else %}
+      -
+      {% endif %}
+    </td>
+    <td>{{ linha[13] }}</td>
+    </tr>
+    {% endfor %}
+
+    </table>
+
+  </body>
+</html>

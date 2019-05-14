@@ -50,7 +50,7 @@ def removerAspas(texto):
 
 def calcularScoreLattes(tipo,area,since,until,arquivo):
     #Tipo = 0: Apenas pontuacao; Tipo = 1: Sumário
-    pasta = WORKING_DIR
+    pasta = WORKING_DIR + "modules/"
     if tipo==1:
         command = "python " + pasta + "scorerun.py -v -p 2016 -s " +  since + " -u " + until + " \"" + area + "\" " +  arquivo
     else:
@@ -69,6 +69,7 @@ def enviarEmail(to,subject,body):
     msg['From'] = gmail_user
     msg['To'] = to
     msg['Subject'] = Header(subject, "utf-8")
+    msg['Cc'] = "rafael.mota@ufca.edu.br"
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
         server.ehlo()
@@ -123,7 +124,7 @@ def gerarDeclaracao(identificador):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    consulta = "SELECT nome,cpf,modalidade,orientador,projeto,inicio,fim,id FROM alunos WHERE id=" + str(identificador)
+    consulta = "SELECT nome,cpf,modalidade,orientador,projeto,inicio,fim,id,ch FROM alunos WHERE id=" + str(identificador)
     cursor.execute(consulta)
     linha = cursor.fetchone()
 
@@ -133,10 +134,11 @@ def gerarDeclaracao(identificador):
     modalidade = linha[2]
     orientador = linha[3]
     projeto = linha[4]
-    ch = "12 horas"
+    ch = linha[8]
     vigencia_inicio = linha[5]
     vigencia_fim = linha[6]
     id_projeto = linha[7]
+    carga_horaria = linha[8]
 
     consulta = "INSERT INTO autenticacao (idAluno,codigo,data) VALUES (" + str(identificador) + ",FLOOR(RAND()*(100000000-10000+1))+10000,NOW())"
     cursor.execute(consulta)
@@ -313,8 +315,11 @@ def cadastrarProjeto():
         bolsas = int(request.form['numero_bolsas'])
     else:
         bolsas = 0
-    consulta = "UPDATE editalProjeto SET titulo=\"" + titulo + "\", validade=" + str(validade) + ", palavras=\"" + palavras_chave + "\", resumo=\"" + descricao_resumida + "\", bolsas=" + str(bolsas) + " WHERE id=" + str(ultimo_id)
+    transporte = unicode(request.form['transporte'])
+    consulta = "UPDATE editalProjeto SET titulo=\"" + titulo + "\", validade=" + str(validade) + ", palavras=\"" + palavras_chave + "\", resumo=\"" + descricao_resumida + "\", bolsas=" + str(bolsas) +  " WHERE id=" + str(ultimo_id)
     logging.debug("Preparando para atualizar dados do projeto.")
+    atualizar(consulta)
+    consulta = "UPDATE editalProjeto SET transporte=" + transporte + " WHERE id=" + str(ultimo_id)
     atualizar(consulta)
     logging.debug("Dados do projeto cadastrados.")
     arquivo_curriculo_lattes = ""
@@ -382,6 +387,38 @@ def cadastrarProjeto():
     		return ("Arquivo de plano 2 de trabalho não permitido")
     else:
         logging.debug("Não foi incluído um arquivo de plano 2")
+
+    #LATTES EM PDF
+    if ('arquivo_lattes_pdf' in request.files):
+        arquivo_lattes_pdf = request.files['arquivo_lattes_pdf']
+        if arquivo_lattes_pdf and allowed_file(arquivo_lattes_pdf.filename):
+            arquivo_lattes_pdf.filename = "LATTES_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_lattes_pdf.filename)
+            arquivo_lattes_pdf.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_lattes_pdf=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+            logging.debug("Arquivo Lattes PDF cadastrado.")
+        elif not allowed_file(arquivo_lattes_pdf.filename):
+    		return ("Arquivo de LATTES PDF não permitido")
+    else:
+        logging.debug("Não foi incluído um arquivo de LATTES PDF")
+
+    #ARQUIVO DE COMPROVANTES
+    if ('arquivo_comprovantes' in request.files):
+        arquivo_comprovantes = request.files['arquivo_comprovantes']
+        if arquivo_comprovantes and allowed_file(arquivo_comprovantes.filename):
+            arquivo_comprovantes.filename = "Comprovantes_" + ultimo_id_str + "_" + str(siape) + "_" + codigo + ".pdf"
+            filename = secure_filename(arquivo_comprovantes.filename)
+            arquivo_comprovantes.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            caminho = str(app.config['UPLOAD_FOLDER'] + "/" + filename)
+            consulta = "UPDATE editalProjeto SET arquivo_comprovantes=\"" + filename + "\" WHERE id=" + str(ultimo_id)
+            atualizar(consulta)
+            logging.debug("Arquivo COMPROVANTES cadastrado.")
+        elif not allowed_file(arquivo_comprovantes.filename):
+    		return ("Arquivo de COMPROVANTES não permitido")
+    else:
+        logging.debug("Não foi incluído um arquivo de COMPROVANTES")
 
     #CADASTRAR AVALIADORES SUGERIDOS
     avaliador1_email = unicode(request.form['avaliador1_email'])
@@ -521,6 +558,12 @@ def podeAvaliar(idProjeto):
     else: #Edital com avaliacoes em andamento
         return(True)
 
+#Gerar pagina de avaliacao (testes) para o avaliador
+@app.route("/testes", methods=['GET', 'POST'])
+def getPaginaAvaliacaoTeste():
+    arquivos = "TESTE"
+    return render_template('avaliacao.html',arquivos=arquivos)
+
 #Gerar pagina de avaliacao para o avaliador
 @app.route("/avaliacao", methods=['GET', 'POST'])
 def getPaginaAvaliacao():
@@ -561,6 +604,13 @@ def enviarAvaliacao():
         recomendacao = str(request.form['txtRecomendacao'])
         nome_avaliador = unicode(request.form['txtNome'])
         token = str(request.form['token'])
+        c1 = str(request.form['c1'])
+        c2 = str(request.form['c2'])
+        c3 = str(request.form['c3'])
+        c4 = str(request.form['c4'])
+        c5 = str(request.form['c5'])
+        c6 = str(request.form['c6'])
+        c7 = str(request.form['c7'])
         try:
             consulta = "UPDATE avaliacoes SET recomendacao=" + recomendacao + " WHERE token=\"" + token + "\""
             atualizar(consulta)
@@ -573,6 +623,20 @@ def enviarAvaliacao():
             comentarios = comentarios.replace('"',' ')
             comentarios = comentarios.replace("'"," ")
             consulta = "UPDATE avaliacoes SET comentario=\"" + comentarios + "\"" + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET c1=" + c1 + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET c2=" + c2 + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET c3=" + c3 + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET c4=" + c4 + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET c5=" + c5 + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET c6=" + c6 + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET c7=" + c7 + " WHERE token=\"" + token + "\""
             atualizar(consulta)
         except:
             e = sys.exc_info()[0]
@@ -887,12 +951,74 @@ def resultados():
             titulo = "Resultado Preliminar"
         else:
             titulo = "Resultado Parcial"
+
+        #Calculando estatísticas de avaliações
+        estatisticas = []
+        consultaPorUnidade = "SELECT editalProjeto.ua,avg((TIMESTAMPDIFF(DAY,data_envio,data_avaliacao))) as media, min((TIMESTAMPDIFF(DAY,data_envio,data_avaliacao))) as minimo, max((TIMESTAMPDIFF(DAY,data_envio,data_avaliacao))) as maximo  FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND finalizado=1 AND editalProjeto.tipo=" + codigoEdital +  " GROUP BY editalProjeto.ua ORDER BY editalProjeto.ua"
+        consultaPorTotal = "SELECT avg((TIMESTAMPDIFF(DAY,data_envio,data_avaliacao))) as media, min((TIMESTAMPDIFF(DAY,data_envio,data_avaliacao))) as minimo, max((TIMESTAMPDIFF(DAY,data_envio,data_avaliacao))) as maximo  FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND finalizado=1 AND editalProjeto.tipo=" + codigoEdital
+        porUnidade,qtde = executarSelect(consultaPorUnidade)
+        porTotal,qtde = executarSelect(consultaPorTotal)
+
+        consultaAvaliacoesTotais = """SELECT
+        (SELECT count(avaliacoes.id) FROM avaliacoes,editalProjeto WHERE finalizado=1 and editalProjeto.id=avaliacoes.idProjeto and editalProjeto.tipo=1) as finalizados,
+        (SELECT count(avaliacoes.id) FROM avaliacoes,editalProjeto WHERE finalizado=0 and aceitou=1 and editalProjeto.id=avaliacoes.idProjeto and editalProjeto.tipo=1) as indefinidos,
+        (SELECT count(avaliacoes.id) FROM avaliacoes,editalProjeto WHERE finalizado=0 and aceitou=0 and editalProjeto.id=avaliacoes.idProjeto and editalProjeto.tipo=1) as negadas,
+        (SELECT count(avaliacoes.id) FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto and editalProjeto.tipo=1) as total
+        FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto and editalProjeto.tipo=1 LIMIT 1"""
+        consultaAvaliacoesTotais.replace(".tipo=1",".tipo=" + codigoEdital)
+        avaliacoesTotais,qtde = executarSelect(consultaAvaliacoesTotais)
+        retorno = (1,2,3,4)
+        for avaliacoes in avaliacoesTotais:
+            retorno = avaliacoes
+        #Projetos novos e em andamento
+        projetosNovos = quantidades("SELECT id FROM editalProjeto WHERE valendo=1 and categoria=1 AND tipo=" + codigoEdital)
+        projetosEmAndamento = quantidades("SELECT id FROM editalProjeto WHERE valendo=1 and categoria=0 AND tipo=" + codigoEdital)
         #Finalizando...
         conn.close()
         data_agora = getData()
-        return(render_template('resultados.html',link=link,mensagem=mensagem,recursos=recursos,nomeEdital=edital,linhasResumo=resumoGeral,totalGeral=total,demanda=demanda,bolsas=qtde_bolsas,somatorios=somatorios,titulo=titulo,data=data_agora))
+        return(render_template('resultados.html',projetosNovos=projetosNovos,projetosEmAndamento=projetosEmAndamento,avaliacoes=retorno,porUnidade=porUnidade,porTotal=porTotal,link=link,mensagem=mensagem,recursos=recursos,nomeEdital=edital,linhasResumo=resumoGeral,totalGeral=total,demanda=demanda,bolsas=qtde_bolsas,somatorios=somatorios,titulo=titulo,data=data_agora))
     else:
         return("OK")
+
+@app.route("/editalProjeto", methods=['GET', 'POST'])
+def editalProjeto():
+    if request.method == "GET":
+        #Recuperando o código do edital
+        if 'edital' in request.args:
+            codigoEdital = str(request.args.get('edital'))
+            conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+            conn.select_db('pesquisa')
+            cursor  = conn.cursor()
+            consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY ua,scorelattes DESC,nome"
+            cursor.execute(consulta)
+            total = cursor.rowcount
+            linhas = cursor.fetchall()
+            descricao = descricaoEdital(codigoEdital)
+            return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao))
+        else:
+            return ("OK")
+
+@app.route("/lattesDetalhado", methods=['GET', 'POST'])
+def lattesDetalhado():
+    if request.method == "GET":
+        #Recuperando o código do edital
+        if 'id' in request.args:
+            idProjeto = str(request.args.get('id'))
+            conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+            conn.select_db('pesquisa')
+            cursor  = conn.cursor()
+            consulta = "SELECT id,scorelattes_detalhado FROM editalProjeto WHERE id=" + idProjeto + " AND valendo=1"
+            cursor.execute(consulta)
+            linhas = cursor.fetchall()
+            texto = "INDISPONIVEL"
+            for linha in linhas:
+                lattes_detalhado = unicode(linha[1])
+                if lattes_detalhado!="":
+                    texto = lattes_detalhado
+            return(texto)
+        else:
+            return ("OK")
+
 
 
 if __name__ == "__main__":

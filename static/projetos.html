@@ -3,13 +3,27 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <title>Consulta de Projetos</title>
-  </head>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+<script>
+function humano() {
+     if (grecaptcha.getResponse() == ""){
+            alert("Clique na caixa abaixo para continuar...!");
+            return (false);
+     } else {
+            //alert("Thank you");
+            return (true);
+       }
+  }
+</script>
+  
+</head>
   <body>
     <h1>Buscar projetos</h1>
-    <form name="frmDados" action="/pesquisa/projetosAluno" method="POST"><b>Parte do nome (sem acentos, cedilhas ou caracteres especiais):</b>
+    <form name="frmDados" action="/pesquisa/projetosAluno" onsubmit="return humano()" method="POST"><b>Parte do nome (sem acentos, cedilhas ou caracteres especiais):</b>
       <input name="txtNome" size="40" type="text"><br>
       <input name="btnEnviar" value="Consultar" formmethod="post" type="submit"><br>
-    </form>
+<div class="g-recaptcha" data-sitekey="6LfzEZ4UAAAAAGZdKtY1Qw9zYUdZsQbYdjaXV6c6"></div>    
+</form>
     <p style="text-align: center;"><br>
     </p>
   </body>

@@ -21,39 +21,11 @@ UPLOAD_FOLDER = '/home/perazzo/pesquisa/static/files/'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/pesquisa/'
 CURRICULOS_DIR='/home/perazzo/pesquisa/static/files/'
+DOCUMENTOS_DIR='/home/perazzo/pesquisa/documentos/'
 #Obtendo senhas
 lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
 PASSWORD = lines[0]
 GMAIL_PASSWORD = lines[1]
-
-'''
-Calcula a pontuação lattes para cada pesquisador
-'''
-def calcularScoreLattes(cursor,TABELA):
-    consulta = "SELECT B.nome,A.idlattes,A.siape,B.capes from docentes as A,edital_05_2018 as B WHERE A.siape=B.siape ORDER BY nome"
-    cursor.execute(consulta)
-    i = 1
-    for linha in cursor.fetchall():
-        idlattes = linha[1]
-        siape = linha[2]
-        area = linha[3]
-        nomeDocente = linha[0]
-        logger.info(nomeDocente)
-        try:
-            #Preparando o parser XML
-            tree = ET.parse("../pesquisa/docentes/" + str(idlattes) + ".xml")
-            root = tree.getroot()
-            score = Score(root,2013, 2018, area, 2016)
-            print(score.get_score())
-            logger.info(nomeDocente + " - [" + str(score.get_score()) + "]")
-            update = "UPDATE " + TABELA + " SET scorelattes=" + str(score.get_score()) + " WHERE siape=" + str(siape)
-            cursor.execute(update)
-            update = "UPDATE " + TABELA + " SET id=" + str(i) + " WHERE siape=" + str(siape)
-            cursor.execute(update)
-            i = i + 1
-        except:
-            e = sys.exc_info()[0]
-            logger.error(e)
 
 def atualizar(consulta):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
@@ -69,7 +41,6 @@ def atualizar(consulta):
         conn.rollback()
     finally:
         conn.close()
-
 
 def gerarLinkAvaliacao():
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
@@ -88,12 +59,29 @@ def gerarLinkAvaliacao():
 
     conn.close()
 
+def getArquivo(edital,tipo):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    if tipo==1:
+        consulta = "SELECT carta_convite FROM editais WHERE id=" + codigoEdital
+    else:
+        consulta = "SELECT carta_agradecimento FROM editais WHERE id=" + codigoEdital
+    cursor.execute(consulta)
+    linhas = cursor.fetchall()
+    arquivo = ""
+    for linha in linhas:
+        arquivo = linha[0]
+    arquivo = DOCUMENTOS_DIR + arquivo
+    conn.close()
+    return (arquivo)
+
 '''
 tipo 0: E-mail ordinário
 tipo 1: E-mail convite
 tipo 2: E-mail agradecimento
 '''
-def enviarEmail(to,subject,body,html,tipo=1):
+def enviarEmail(to,subject,body,html,tipo=1,edital=0):
     gmail_user = 'pesquisa.prpi@ufca.edu.br'
     gmail_password = GMAIL_PASSWORD
     sent_from = gmail_user
@@ -104,9 +92,13 @@ def enviarEmail(to,subject,body,html,tipo=1):
     msg.attach(part1)
     msg.attach(part2)
     if tipo==1:
-        pdf = open(WORKING_DIR + "convite-consultor-ad-hoc.pdf", "rb")
+        #pdf = open(WORKING_DIR + "convite-consultor-ad-hoc.pdf", "rb")
+        anexo = getArquivo(edital,tipo)
+        pdf = open(anexo, "rb")
     else:
-        pdf = open(WORKING_DIR + "carta-agradecimento-adhoc.pdf", "rb")
+        #pdf = open(WORKING_DIR + "carta-agradecimento-adhoc.pdf", "rb")
+        anexo = getArquivo(edital,tipo)
+        pdf = open(anexo, "rb")
     pdfAttachment = MIMEApplication(pdf.read(), _subtype = "pdf")
     if tipo==1:
         pdfAttachment.add_header('content-disposition', 'attachment', filename = 'convite.pdf')
@@ -143,6 +135,7 @@ def prazoAvaliacao(codigoEdital):
     resultado = ""
     for linha in linhas:
         resultado = linha[0]
+    conn.close()
     return (str(resultado))
 
 def podeAvaliar(codigoEdital):
@@ -213,7 +206,7 @@ def enviarLinksParaAvaliadores(codigoEdital):
             mensagem = mensagem + "Link para avaliação: " + link + " \n"
             mensagem = mensagem + "Resumo do projeto\n" + resumo
             html = "<html><body>\n"
-            html = html + "<h4><center>Universidade Federal do Cariri (UFCA) - Coordenadoria de Pesquisa</center></h4><BR>"
+            html = html + "<h3><center>Universidade Federal do Cariri (UFCA) - Coordenadoria de Pesquisa</center></h3><BR>"
             html = html + "<h1><center>Solicitação de Avaliação de Projeto de Pesquisa (e-mail automático)</center></h1><BR>"
             if categoria_projeto==1:
                 if envios==0:
@@ -229,7 +222,7 @@ def enviarLinksParaAvaliadores(codigoEdital):
             html = html + "<h2>Título do projeto: " + titulo + "</h2><BR>\n"
             html = html + "<h3>Resumo do projeto <BR> " + resumo + "</h3><BR>\n"
             html = html + "<h3>Data limite para envio da avaliação:" + deadline + "  <BR> </h3><BR>\n"
-            html = html + "<h3>Site oficial do processo seletivo PRPI/UFCA: http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/ </h3><BR>\n"
+            html = html + "<h3>Site oficial do processo seletivo PRPI/UFCA: http://prpi.ufca.edu.br/ </h3><BR>\n"
             html = html + "<h3>Telefone institucional para contato direto com o coordenador: (88)3221-9566 - http://telefonia.ufca.edu.br </h3><BR>\n"
             html = html + "</body></html>"
             if envios==0:
@@ -258,7 +251,7 @@ def enviarAgradecimentosParaAvaliadores(codigoEdital):
         for linha in linhas:
             email = unicode(linha[0])
             token = str(linha[1])
-            #email = "rafael.mota@ufca.edu.br"
+            email = "rafael.mota@ufca.edu.br"
             link = LINK_HOME + "declaracaoAvaliador?token=" + token
             mensagem = unicode("CARTA AGRADECIMENTO.")
             html = "<html><body>\n"
@@ -304,3 +297,5 @@ else:
     enviarLinksParaAvaliadores("1")
 enviarEmail("rafael.mota@ufca.edu.br","[Cron Executado]","",u"Edital: [" + codigoEdital +u"]<BR> Solicitação de Avaliação/Agradecimento para avaliadores que não finalizaram.",0)
 enviarAgradecimentosParaAvaliadores(codigoEdital)
+
+#lattes_detalhado("3")

@@ -1,3 +1,5 @@
 */5 * * * * rm -f /home/perazzo/pesquisa/static/files/000_*.xml
-0 7 * * 1 /usr/bin/python /home/perazzo/pesquisa/processar.py 1
+0 7 * * 1 /usr/bin/python /home/perazzo/pesquisa/processar.py 3
+0 7 * * 1 /usr/bin/python /home/perazzo/pesquisa/processar.py 0
 0 * * * * /home/perazzo/pesquisa/./backup-mysql.sh
+0 * * * * /usr/bin/python /home/perazzo/pesquisa/calcular_lattes.py 3

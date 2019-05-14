@@ -34,6 +34,16 @@ tr:nth-child(even) {
     <p><b><h2>{{ nomeEdital }}</h2></b></p>
     <h2>Total de projetos aprovados: {{ totalGeral }}</h2>
     <h2>Total de bolsas disponíveis: {{ bolsas }}</h2>
+
+    <hr>
+    <h2>Total de projetos novos: {{ projetosNovos }}</h2>
+    <h2>Total de projetos em andamento: {{ projetosEmAndamento }}</h2>
+    <h2>Total de avaliações requisitadas: {{ avaliacoes[3] }}</h2>
+    <h2>Total de avaliações finalizadas: {{ avaliacoes[0] }} ({{ ((avaliacoes[0]/avaliacoes[3])*100)|round|int }}%)</h2>
+    <h2>Total de avaliações sem resposta: {{ avaliacoes[1] }} ({{ ((avaliacoes[1]/avaliacoes[3])*100)|round|int }}%)</h2>
+    <h2>Total de avaliações negadas: {{ avaliacoes[2] }} ({{ ((avaliacoes[2]/avaliacoes[3])*100)|round|int }}%)</h2>
+
+    <hr>
     <table style="width:100%">
       <caption><h2>Demanda/Oferta</h2></caption>
       <tr>
@@ -55,6 +65,32 @@ tr:nth-child(even) {
       {% for linha in somatorios %}
       <tr>
         <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td><td>{{ linha[2] }}</td><td>{{ linha[3] }}%</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <hr><br>
+    <table style="width:100%">
+      <caption><h2>Tempo de resposta das Avaliações por unidade academica (em dias)</h2></caption>
+      <tr>
+        <th>Unidade Academica</th><th>Média</th><th>Mínimo</th><th>Máximo</th>
+      </tr>
+      {% for linha in porUnidade %}
+      <tr>
+        <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td><td>{{ linha[2] }}</td><td>{{ linha[3] }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <hr><br>
+    <table style="width:100%">
+      <caption><h2>Tempo geral de resposta das Avaliações (em dias)</h2></caption>
+      <tr>
+        <th>Média</th><th>Mínimo</th><th>Máximo</th>
+      </tr>
+      {% for linha in porTotal %}
+      <tr>
+        <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td><td>{{ linha[2] }}</td>
       </tr>
       {% endfor %}
     </table>
