@@ -44,7 +44,7 @@ def lattes_detalhado(codigoEdital):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    consulta = "SELECT arquivo_lattes,area_capes,id FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY nome"
+    consulta = "SELECT arquivo_lattes,area_capes,id FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 and scorelattes_detalhado=\"\" ORDER BY nome"
     try:
         cursor.execute(consulta)
         linhas = cursor.fetchall()
@@ -54,6 +54,7 @@ def lattes_detalhado(codigoEdital):
             idProjeto = str(linha[2])
             producao = "INDISPONIVEL"
             try:
+                print("Calculando o lattes do ID: " + idProjeto)
                 producao = calcularScoreLattes(1,area_capes,"2014","2019",arquivo)
             except e:
                 e = sys.exc_info()[0]

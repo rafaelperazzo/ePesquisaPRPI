@@ -27,6 +27,7 @@ lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
 PASSWORD = lines[0]
 GMAIL_PASSWORD = lines[1]
 
+'''
 def atualizar(consulta):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.autocommit(False)
@@ -39,6 +40,23 @@ def atualizar(consulta):
         e = sys.exc_info()[0]
         logging.debug(e)
         conn.rollback()
+    finally:
+        conn.close()
+'''
+
+def atualizar(consulta):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.autocommit(True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    try:
+        cursor.execute(consulta)
+        conn.commit()
+    except MySQLdb.Error, e:
+        #e = sys.exc_info()[0]
+        logging.debug(e)
+	logging.debug(consulta)
+        #conn.rollback()
     finally:
         conn.close()
 
@@ -294,7 +312,7 @@ if (len(sys.argv)>1):
     codigoEdital = str(sys.argv[1])
     enviarLinksParaAvaliadores(codigoEdital)
 else:
-    enviarLinksParaAvaliadores("1")
+    enviarLinksParaAvaliadores("0")
 enviarEmail("rafael.mota@ufca.edu.br","[Cron Executado]","",u"Edital: [" + codigoEdital +u"]<BR> Solicitação de Avaliação/Agradecimento para avaliadores que não finalizaram.",0)
 enviarAgradecimentosParaAvaliadores(codigoEdital)
 

@@ -321,6 +321,12 @@ def cadastrarProjeto():
     atualizar(consulta)
     consulta = "UPDATE editalProjeto SET transporte=" + transporte + " WHERE id=" + str(ultimo_id)
     atualizar(consulta)
+    inicio = unicode(request.form['inicio'])
+    fim = unicode(request.form['fim'])
+    consulta = "UPDATE editalProjeto SET inicio=\"" + inicio + "\" WHERE id=" + str(ultimo_id)
+    atualizar(consulta)
+    consulta = "UPDATE editalProjeto SET fim=\"" + fim + "\" WHERE id=" + str(ultimo_id)
+    atualizar(consulta)
     logging.debug("Dados do projeto cadastrados.")
     arquivo_curriculo_lattes = ""
     codigo = id_generator()
@@ -989,12 +995,12 @@ def editalProjeto():
             conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
             conn.select_db('pesquisa')
             cursor  = conn.cursor()
-            consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY ua,scorelattes DESC,nome"
+            consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY id"
             cursor.execute(consulta)
             total = cursor.rowcount
             linhas = cursor.fetchall()
             descricao = descricaoEdital(codigoEdital)
-            return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao))
+            return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total))
         else:
             return ("OK")
 
@@ -1020,6 +1026,35 @@ def lattesDetalhado():
             return ("OK")
 
 
+@app.route("/declaracoesPorServidor", methods=['GET', 'POST'])
+def declaracoesServidor():
+    if request.method == "POST":
+        if 'txtSiape' in request.form:
+            siape = str(request.form['txtSiape'])
+            consulta = "SELECT id,nome,evento,modalidade FROM declaracoes WHERE siape=" + siape
+            declaracoes,total = executarSelect(consulta)
+            return(render_template('declaracoes_servidor.html',listaDeclaracoes=declaracoes))
+        else:
+            return("OK")
+    else:
+        return("OK")
+
+@app.route("/declaracaoEvento", methods=['GET', 'POST'])
+def declaracaoEvento():
+    if request.method == "GET":
+        #Recuperando o código da declaração
+        if 'id' in request.args:
+            idDeclaracao = str(request.args.get('id'))
+            consulta = "SELECT nome,siape,participacao,evento,modalidade,periodo,local FROM declaracoes WHERE id=" + idDeclaracao
+            linhas,total = executarSelect(consulta)
+            if (total>0):
+                texto = linhas[0]
+                data_agora = getData()
+                return(render_template('declaracao_evento.html',texto=texto,data=data_agora,identificador=idDeclaracao))
+            else:
+                return(u"Nenhuma declaração encontrada.")
+        else:
+            return ("OK")
 
 if __name__ == "__main__":
     app.run()
