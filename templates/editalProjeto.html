@@ -17,6 +17,19 @@ td, th {
 tr:nth-child(even) {
     background-color: #dddddd;
 }
+
+p.aprovado {
+  color: green;
+}
+
+p.indefinido {
+  color: orange;
+}
+
+p.reprovado {
+  color: red;
+}
+
 </style>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <title>Propostas submetidas a edital</title>
@@ -77,5 +90,36 @@ tr:nth-child(even) {
 
     </table>
     Total: {{total}} propostas submetidas.
+
+    <hr>
+    <h1>PROJETOS NOVOS (em avaliação)</h1>
+    <table>
+      <th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Projeto</th><th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
+      <th>Aprovados</th><th>NÃO Aprovados</th><th>Indefinidos</th><th>Situação</th>
+      {% for linha in novos %}
+      <tr>
+        <td>{{linha[0]}}</td><td>{{linha[1]}}</td><td>{{linha[2]}}</td><td>{{linha[3]}}</td><td><a href="/pesquisa/static/files/{{ linha[4] }}">PROJETO</a></td><td>{{linha[5]|safe}}</td><td>{{linha[6]|safe}}</td>
+        <td>{{linha[7]|safe}}</td>
+        <td>{{linha[8]|safe}}</td>
+        <td>{{linha[9]}}</td>
+        <td>{{linha[12]}}</td>
+        <td>{{linha[11]}}</td>
+        <td>{{linha[10]}}</td>
+        <td>
+          {% if (linha[12]+linha[11])>=2 %}
+            {% if linha[12]-linha[11]>0 %}
+            <p class="aprovado">APROVADO</p>
+            {% else %}
+            <p class="reprovado">NÃO APROVADO</p>
+            {% endif %}
+          {% else %}
+            <p class="indefinido">INDEFINIDO</p>
+          {% endif %}
+
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    Total: {{total_novos}} projetos novos submetidos.
   </body>
 </html>

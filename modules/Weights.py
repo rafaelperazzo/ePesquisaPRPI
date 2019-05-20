@@ -32,6 +32,8 @@ weights = {
             'APRESENTACAO-DE-OBRA-ARTISTICA': 1,
             'COMPOSICAO-MUSICAL': 2,
             'OBRA-DE-ARTES-VISUAIS': 2,
+            'MUSICA': 2,
+            'ARTES-CENICAS': 2,
         },
         'ORIENTACOES-CONCLUIDAS': {
             'ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO': 7,

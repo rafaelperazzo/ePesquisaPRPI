@@ -206,6 +206,12 @@ textarea {
   <body onload="iniciar()"><br>
     <form name="frmCadastroProjeto" action="/pesquisa/cadastrarProjeto" onsubmit="return humano()" method="POST"
       enctype="multipart/form-data">
+      <center><img src="{{ url_for('static', filename='brasao.jpg')}}" width="8%" alt="" align="center"></center>
+      <br><center>
+      Ministério da Educação<BR>
+      Universidade Federal do Cariri<BR>
+      Pró-reitoria de Pesquisa, Pós-graduação e Inovação<BR></center>
+
       <h1 style="text-align: center;"> CADASTRAR PROJETO DE PESQUISA - Plataforma Yoko</h1><br>
       <center><i><font size="2">Sistema Experimental. Quaisquer erros ou problemas podem ser reportados ao e-mail atendimento.prpi@ufca.edu.br para correção(ões).</font></i></center><br>
       <label><b>Destino da Submissão</b>:
@@ -375,7 +381,8 @@ maxlength="15000"></textarea><br>
       </label>
       <hr>
       <h2>Comprovantes</h2>
-      <b>Comprovantes (apresentação de trabalho na Mostra UFCA ou equivalente, docente de pós, etc... - Todos juntos em um único PDF)</b><BR> <input name="arquivo_comprovantes"  onchange="ValidateSingleInputPDF(this);" type="file"><br>
+      <b>Comprovantes (apresentação de trabalho na Mostra UFCA ou equivalente, docente de pós, Submissão a Comitê de Ética (Plataforma Brasil) - se aplicável, etc... - Todos juntos em um único PDF)</b>
+      <BR> <input name="arquivo_comprovantes"  onchange="ValidateSingleInputPDF(this);" type="file"><br>
       <hr>
       <h2>Avaliadores externos sugeridos para avaliação do projeto (indique 3 - sujeito a aprovação da Coordenadoria de Pesquisa)</h2>
       <h4><i>Com título de doutor, preferencialmente bolsista de produtividade e/ou membro de programa de Pós-Graduação Stricto sensu, sem conflito de interesses. </i></h4>

@@ -66,6 +66,8 @@ weights = {
             'APRESENTACAO-DE-OBRA-ARTISTICA': 1,
             'COMPOSICAO-MUSICAL': 2,
             'OBRA-DE-ARTES-VISUAIS': 2,
+            'MUSICA': 2,
+            'ARTES-CENICAS': 2,
         },
         'ORIENTACOES-CONCLUIDAS': {
             'ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO': 7,
@@ -115,6 +117,8 @@ bounds = {
             'APRESENTACAO-DE-OBRA-ARTISTICA': 5,
             'COMPOSICAO-MUSICAL': 4,
             'OBRA-DE-ARTES-VISUAIS': 4,
+            'MUSICA': 4,
+            'ARTES-CENICAS': 4,
         },
         'ORIENTACOES-CONCLUIDAS': {
             'ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO': 'inf',
@@ -180,6 +184,8 @@ class Score(object):
                     'APRESENTACAO-DE-OBRA-ARTISTICA': 0,
                     'COMPOSICAO-MUSICAL': 0,
                     'OBRA-DE-ARTES-VISUAIS': 0,
+                    'MUSICA': 0,
+                    'ARTES-CENICAS': 0,
                 },
                 'ORIENTACOES-CONCLUIDAS': {
                     'ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO': 0,
@@ -661,7 +667,9 @@ class Score(object):
 
         self.__apresentacao_de_obra_artistica(obras)
         self.__composicao_musical(obras)
+        self.__musica(obras)
         self.__obra_de_artes_visuais(obras)
+        self.__artes_cenicas(obras)
 
     def __apresentacao_de_obra_artistica(self, obras):
         apresentacoes = obras.findall('APRESENTACAO-DE-OBRA-ARTISTICA')
@@ -696,6 +704,41 @@ class Score(object):
                 weight = weights['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['COMPOSICAO-MUSICAL']
                 bound = bounds['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['COMPOSICAO-MUSICAL']
                 self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['COMPOSICAO-MUSICAL'] = self.__clamp(current+weight, bound)
+
+    def __musica(self, obras):
+        composicoes = obras.findall('MUSICA')
+        if composicoes is None:
+            return
+
+        for composicao in composicoes:
+            dados = composicao.find('DADOS-BASICOS-DA-MUSICA')
+            ano = dados.attrib['ANO']
+            if ano == "":
+                continue
+
+            if self.__ano_inicio <= int(ano) <= self.__ano_fim:
+                current = self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['MUSICA']
+                weight = weights['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['MUSICA']
+                bound = bounds['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['MUSICA']
+                self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['MUSICA'] = self.__clamp(current+weight, bound)
+
+    def __artes_cenicas(self, obras):
+        composicoes = obras.findall('ARTES-CENICAS')
+        if composicoes is None:
+            return
+
+        for composicao in composicoes:
+            dados = composicao.find('DADOS-BASICOS-DE-ARTES-CENICAS')
+            ano = dados.attrib['ANO']
+            if ano == "":
+                continue
+
+            if self.__ano_inicio <= int(ano) <= self.__ano_fim:
+                current = self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['ARTES-CENICAS']
+                weight = weights['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['ARTES-CENICAS']
+                bound = bounds['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['ARTES-CENICAS']
+                self.__tabela_de_qualificacao['OUTRA-PRODUCAO']['PRODUCAO-ARTISTICA-CULTURAL']['ARTES-CENICAS'] = self.__clamp(current+weight, bound)
+
 
     def __obra_de_artes_visuais(self, obras):
         artes = obras.findall('OBRA-DE-ARTES-VISUAIS')

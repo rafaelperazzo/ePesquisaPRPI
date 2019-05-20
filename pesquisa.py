@@ -6,7 +6,7 @@
 #SELECT editalProjeto.titulo, (SELECT sum(avaliacoes.finalizado) FROM avaliacoes WHERE avaliacoes.idProjeto=editalProjeto.id) as soma FROM editalProjeto WHERE id=25;
 from flask import Flask
 from flask import render_template
-from flask import request,url_for,send_file,send_from_directory,redirect,flash,Markup
+from flask import request,url_for,send_file,send_from_directory,redirect,flash,Markup,Response
 import datetime
 import sqlite3
 import MySQLdb
@@ -224,15 +224,25 @@ def home():
 
 @app.route("/declaracao", methods=['GET', 'POST'])
 def declaracao():
-    #texto_declaracao = gerarDeclaracao(str(request.form['txtCPF']))
-    texto_declaracao = gerarDeclaracao(str(request.args['idProjeto']))
-    data_agora = getData()
-    return render_template('a4.html',texto=texto_declaracao,data=data_agora,identificador=texto_declaracao[7])
+    if request.method == "GET":
+        if 'idProjeto' in request.args:
+            texto_declaracao = gerarDeclaracao(str(request.args['idProjeto']))
+            data_agora = getData()
+            return render_template('a4.html',texto=texto_declaracao,data=data_agora,identificador=texto_declaracao[7])
+        else:
+            logging.debug("Tentativa de gerar declaração, sem o id do projeto!")
+            return("OK")
 
 @app.route("/projetosAluno", methods=['GET', 'POST'])
 def projetos():
-    projetosAluno = gerarProjetosPorAluno(str(request.form['txtNome']))
-    return render_template('alunos.html',listaProjetos=projetosAluno)
+    try:
+        projetosAluno = gerarProjetosPorAluno(unicode(request.form['txtNome']))
+        return render_template('alunos.html',listaProjetos=projetosAluno)
+    except:
+        e = sys.exc_info()[0]
+        logging.error(e)
+        logging.error("Nao foi possivel gerar os projetos do aluno.")
+        return("Erro! Não utilize acentos ou caracteres especiais na busca.")
 
 @app.route("/autenticacao", methods=['GET', 'POST'])
 def autenticar():
@@ -617,6 +627,7 @@ def enviarAvaliacao():
         c5 = str(request.form['c5'])
         c6 = str(request.form['c6'])
         c7 = str(request.form['c7'])
+        comite = str(request.form['comite'])
         try:
             consulta = "UPDATE avaliacoes SET recomendacao=" + recomendacao + " WHERE token=\"" + token + "\""
             atualizar(consulta)
@@ -643,6 +654,8 @@ def enviarAvaliacao():
             consulta = "UPDATE avaliacoes SET c6=" + c6 + " WHERE token=\"" + token + "\""
             atualizar(consulta)
             consulta = "UPDATE avaliacoes SET c7=" + c7 + " WHERE token=\"" + token + "\""
+            atualizar(consulta)
+            consulta = "UPDATE avaliacoes SET cepa=" + comite + " WHERE token=\"" + token + "\""
             atualizar(consulta)
         except:
             e = sys.exc_info()[0]
@@ -988,6 +1001,18 @@ def resultados():
 
 @app.route("/editalProjeto", methods=['GET', 'POST'])
 def editalProjeto():
+    #SELECT editalProjeto.id,editalProjeto.nome,GROUP_CONCAT(avaliacoes.avaliador,"(",avaliacoes.finalizado,")") as avaliadores FROM editalProjeto,avaliacoes WHERE tipo=3 and categoria=1 and valendo=1 and editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id
+    #SELECT editalProjeto.id,editalProjeto.nome,GROUP_CONCAT(avaliacoes.avaliador ORDER BY avaliador SEPARATOR '\n') as avaliadores,GROUP_CONCAT(avaliacoes.recomendacao ORDER BY avaliador SEPARATOR '\n') as recomendacoes FROM editalProjeto,avaliacoes WHERE tipo=3 and categoria=1 and valendo=1 and editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id ORDER BY editalProjeto.id
+    '''
+    SELECT editalProjeto.id,editalProjeto.nome, sum(avaliacoes.recomendacao),
+    GROUP_CONCAT(avaliacoes.avaliador ORDER BY avaliador SEPARATOR '\n') as avaliadores,
+    GROUP_CONCAT(avaliacoes.recomendacao ORDER BY avaliador SEPARATOR '\n') as recomendacoes,
+    GROUP_CONCAT(avaliacoes.enviado ORDER BY avaliador SEPARATOR '\n') as enviado
+    FROM editalProjeto,avaliacoes
+    WHERE tipo=3 and categoria=1 and valendo=1 and editalProjeto.id=avaliacoes.idProjeto
+    GROUP BY editalProjeto.id
+    ORDER BY editalProjeto.id
+    '''
     if request.method == "GET":
         #Recuperando o código do edital
         if 'edital' in request.args:
@@ -996,11 +1021,49 @@ def editalProjeto():
             conn.select_db('pesquisa')
             cursor  = conn.cursor()
             consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY id"
-            cursor.execute(consulta)
-            total = cursor.rowcount
-            linhas = cursor.fetchall()
-            descricao = descricaoEdital(codigoEdital)
-            return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total))
+            consulta_novos = """SELECT editalProjeto.id,nome,ua,titulo,arquivo_projeto,
+            GROUP_CONCAT(avaliacoes.avaliador ORDER BY avaliador SEPARATOR '<BR>') as avaliadores,GROUP_CONCAT(avaliacoes.recomendacao ORDER BY avaliador SEPARATOR '<BR>') as recomendacoes,GROUP_CONCAT(avaliacoes.enviado ORDER BY avaliador SEPARATOR '<BR>') as enviado,GROUP_CONCAT(avaliacoes.aceitou ORDER BY avaliador SEPARATOR '<BR>') as aceitou,
+            sum(avaliacoes.finalizado),sum(if(recomendacao=-1,1,0)), sum(if(recomendacao=0,1,0)),sum(if(recomendacao=1,1,0))"""
+            consulta_novos = consulta_novos + """ FROM editalProjeto,avaliacoes WHERE tipo=""" + codigoEdital + """ AND valendo=1 AND categoria=1
+            AND editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id ORDER BY editalProjeto.ua,editalProjeto.id"""
+            try:
+                cursor.execute(consulta)
+                total = cursor.rowcount
+                linhas = cursor.fetchall()
+                descricao = descricaoEdital(codigoEdital)
+                cursor.execute(consulta_novos)
+                total_novos = cursor.rowcount
+                linhas_novos = cursor.fetchall()
+                '''
+                try:
+                    for linha in linhas_novos:
+                        recomendacao = str(linha[6])
+                        recomendacao.replace("-1","NAO CONCLUIDA")
+                        recomendacao.replace("1","RECOMENDADO")
+                        recomendacao.replace("0","NAO RECOMENDADO")
+                        #linha[6] = unicode(recomendacao)
+                        logging.debug(unicode(recomendacao))
+                        aceitou = str(linha[8])
+                        aceitou.replace("-1","NAO INFORMADO")
+                        aceitou.replace("1","SIM")
+                        aceitou.replace("0","NAO")
+                        logging.debug(unicode(recomendacao))
+                        #linha[8] = unicode(aceitou)
+                except:
+                    e = sys.exc_info()[0]
+                    logging.error(e)
+                    logging.error("ERRO Na função  MUDAR DESCRICAO")
+                '''
+                return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos))
+            except:
+                e = sys.exc_info()[0]
+                logging.error(e)
+                logging.error("ERRO Na função /editalProjeto. Ver consulta abaixo.")
+                logging.error(consulta)
+                return("ERRO!")
+            finally:
+                conn.close()
+
         else:
             return ("OK")
 
@@ -1021,6 +1084,7 @@ def lattesDetalhado():
                 lattes_detalhado = unicode(linha[1])
                 if lattes_detalhado!="":
                     texto = lattes_detalhado
+            conn.close()
             return(texto)
         else:
             return ("OK")
@@ -1031,9 +1095,17 @@ def declaracoesServidor():
     if request.method == "POST":
         if 'txtSiape' in request.form:
             siape = str(request.form['txtSiape'])
-            consulta = "SELECT id,nome,evento,modalidade FROM declaracoes WHERE siape=" + siape
-            declaracoes,total = executarSelect(consulta)
-            return(render_template('declaracoes_servidor.html',listaDeclaracoes=declaracoes))
+            consulta = ""
+            try:
+                consulta = "SELECT id,nome,evento,modalidade FROM declaracoes WHERE siape=" + siape
+                declaracoes,total = executarSelect(consulta)
+                return(render_template('declaracoes_servidor.html',listaDeclaracoes=declaracoes))
+            except:
+                e = sys.exc_info()[0]
+                logging.error(e)
+                logging.error("ERRO Na função /declaracoesPorServidor. Ver consulta abaixo.")
+                logging.error(consulta)
+                return("ERRO!")
         else:
             return("OK")
     else:

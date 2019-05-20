@@ -32,6 +32,8 @@ bounds = {
             'APRESENTACAO-DE-OBRA-ARTISTICA': 5,
             'COMPOSICAO-MUSICAL': 4,
             'OBRA-DE-ARTES-VISUAIS': 4,
+            'MUSICA': 4,
+            'ARTES-CENICAS': 4,
         },
         'ORIENTACOES-CONCLUIDAS': {
             'ORIENTACOES-CONCLUIDAS-PARA-POS-DOUTORADO': 'inf',

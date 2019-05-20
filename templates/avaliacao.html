@@ -15,13 +15,13 @@
        var c7 = parseInt(document.forms["frmAvaliacao"]["c7"].value);
        var total = c1+c2+c3+c4+c5+c6+c7;
        var totalStr = total.toString();
-       document.getElementById("total").innerHTML = "Pontuação total: " + totalStr;
+       document.getElementById("total").innerHTML = "<h3>Pontuação total: " + totalStr + "</h3>";
        if (total>=70) {
-          document.getElementById("resultado").innerHTML = "PROJETO RECOMENDADO (APROVADO)";
+          document.getElementById("resultado").innerHTML = "<h3>PROJETO RECOMENDADO (APROVADO)</h3>";
           document.getElementById("txtRecomendacao").value = 1;
        }
        else {
-         document.getElementById("resultado").innerHTML = "PROJETO <B>NÃO</B> RECOMENDADO (NÃO APROVADO)";
+         document.getElementById("resultado").innerHTML = "<h3>PROJETO <B>NÃO</B> RECOMENDADO (NÃO APROVADO)</h3>";
          document.getElementById("txtRecomendacao").value = 0;
        }
      }
@@ -94,11 +94,32 @@ textarea {
 
 </style>
   <body>
+    <center><img src="{{ url_for('static', filename='brasao.jpg')}}" width="8%" alt="" align="center"></center>
+    <br><center>
+    Ministério da Educação<BR>
+    Universidade Federal do Cariri<BR>
+    Pró-reitoria de Pesquisa, Pós-graduação e Inovação<BR></center>
     <center><h1>Avaliação de Projeto de Pesquisa</h1><center>
-      <i>A declaração de participação como consultor ad-hoc é gerada imediatamente após a submissão do deste formulário de avaliação.</i><br>
-    <form name="frmAvaliacao" action="/pesquisa/avaliar" method="POST"> {{
-      arquivos }} <br>
+      <hr>
+      <h3>Informações importantes</h3>
+      <ol>
+        <li>A declaração de participação como consultor ad-hoc é gerada imediatamente após a submissão deste formulário de avaliação.</li>
+        <li>Os proponentes não tem acesso, em hipótese alguma, aos nomes dos avaliadores, ficando estes dados acessíveis apenas a coordenadoria de pesquisa para fins de controle das declarações.</li>
+        <li>Quaisquer dúvidas podem ser endereçadas a <b>pesquisa.prpi@ufca.edu.br</b>, ou pelo telefone <b>(88) 3221-9566</b></li>
+      </ol>
 
+
+    <form name="frmAvaliacao" action="/pesquisa/avaliar" method="POST">
+      <hr>
+      <h3>Arquivos do projeto</h3>
+      {{ arquivos }} <br>
+
+      <hr>
+      <h2>FORMULÁRIO DE AVALIAÇÃO</h2>
+      <h3>O projeto é considerado APROVADO (recomendado) caso o somatório dos conceitos abaixo seja maior ou igual a 70.</h3>
+      <hr>
+      <b>Seu nome completo (para geração de declaração de avaliação):</b> <input name="txtNome"
+        required="required" size="80" type="text"><br>
       <br>
       <table style="width:100%">
 
@@ -107,7 +128,7 @@ textarea {
         </tr>
 
         <tr>
-          <td>A</td><td>Clareza na apresentação do tema e delimitação do problema</td>
+          <td>A</td><td>Clareza na apresentação do tema e delimitação do problema <b>(Máximo 15 pontos)</b></td>
           <td>
           <select name="c1" required="required">
             <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
@@ -120,7 +141,7 @@ textarea {
 
         <tr>
           <td>B</td><td>Qualidade das referências bibliográficas utilizadas, considerando
-atualização, relevância e adequação ao tema de pesquisa</td>
+atualização, relevância e adequação ao tema de pesquisa <b>(Máximo 10 pontos)</b></td>
           <td>
           <select name="c2" required="required">
             <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
@@ -132,7 +153,7 @@ atualização, relevância e adequação ao tema de pesquisa</td>
         </tr>
 
         <tr>
-          <td>C</td><td>Clareza na definição dos objetivos e metas</td>
+          <td>C</td><td>Clareza na definição dos objetivos e metas <b>(Máximo 10 pontos)</b></td>
           <td>
           <select name="c3" required="required">
             <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
@@ -145,7 +166,7 @@ atualização, relevância e adequação ao tema de pesquisa</td>
 
         <tr>
           <td>D</td><td>Originalidade e/ou relevância da pesquisa para o desenvolvimento
-científico do país</td>
+científico do país <b>(Máximo 20 pontos)</b></td>
           <td>
           <select name="c4" required="required">
             <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
@@ -158,7 +179,7 @@ científico do país</td>
 
         <tr>
           <td>E</td><td>Adequação da metodologia e do cronograma de execução ao(s)
-objetivo(s) proposto(s)</td>
+objetivo(s) proposto(s) <b>(Máximo 15 pontos)</b></td>
           <td>
           <select name="c5" required="required">
             <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
@@ -171,7 +192,7 @@ objetivo(s) proposto(s)</td>
 
         <tr>
           <td>F</td><td>Potencial de impacto dos resultados do ponto de vista
-técnico-científico, difusão, socioeconômico, ambiental e cultural</td>
+técnico-científico, difusão, socioeconômico, ambiental e cultural <b>(Máximo 15 pontos)</b></td>
           <td>
           <select name="c6" required="required">
             <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
@@ -184,7 +205,7 @@ técnico-científico, difusão, socioeconômico, ambiental e cultural</td>
 
         <tr>
           <td>G</td><td>No caso de projetos de pesquisa: potencial de avanço científico do
-projeto em relação à fronteira do conhecimento.</td>
+projeto em relação à fronteira do conhecimento <b>(Máximo 15 pontos)</b></td>
           <td>
           <select name="c7" required="required">
             <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
@@ -203,14 +224,21 @@ projeto em relação à fronteira do conhecimento.</td>
       <BR>
       <div align="right"
       <p id="resultado"></p>
-      </div>
+    </div><br>
+      <b>Projeto necessita de parecer de comitê de ética ? </b>
+      <select name="comite" required="required">
+        <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
+        <option value="0">Não</option>
+        <option value="1">Sim</option>
+        <option value="2">Não sei responder</option>
+      </select><br>
       <b>Comentários:<br>
-        <textarea name="txtComentarios" cols="120" rows="40" required="required"></textarea><br>
-        Seu nome completo (para geração de declaração de avaliação): <input name="txtNome"
-          required="required" size="80" type="text"><br>
+        <textarea name="txtComentarios" cols="120" rows="40" required="required" onfocus="recomendacao()"></textarea><br>
+
         Recomendação:
         <select id="txtRecomendacao" name="txtRecomendacao" required="required" onblur="recomendacao()" onfocus="recomendacao()" width="50%">
-          <option value="1" selected="selected">Recomendado</option>
+          <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
+          <option value="1">Recomendado</option>
           <option value="0">Não recomendado</option>
         </select>
         <br>

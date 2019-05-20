@@ -234,7 +234,7 @@ def enviarLinksParaAvaliadores(codigoEdital):
             else:
                 html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de convida-lo(a) para avaliação do(s) plano(s) de trabalho disponíveis a seguir. O convite formal segue em anexo, assinado digitalmente. Os arquivos relativos ao(s) plano(s) podem ser acessados no link informado abaixo.<BR>"
             html = html + "O projeto está em avaliação para concessão de bolsas de Iniciação Científica e/ou Tecnológica.<BR>"
-            html = html + "Quaisquer dúvidas estamos a disposição. A declaração de avaliação é gerada imediatamente após a conclusão da avaliação.<BR>"
+            html = html + "Quaisquer dúvidas estamos a disposição. A avaliação é totalmente anonima para os proponentes dos projetos. A declaração de avaliação é gerada imediatamente após a conclusão da avaliação.<BR>"
             html = html + "<h4>Em caso de indisponibilidade de avaliação, favor <a href=\"" + link_recusa + "\">Clique aqui para recusar o convite</a>" + "</h4><BR>\n"
             html = html + "<h2>Link para acessar os arquivos e envio da avaliação: <a href=\"" + link + "\">Clique Aqui</a></h2><BR>\n"
             html = html + "<h2>Título do projeto: " + titulo + "</h2><BR>\n"
@@ -308,6 +308,7 @@ sys.setdefaultencoding('utf-8')
 #GERAR LINK PARA AVALIADORES
 codigoEdital = "0"
 gerarLinkAvaliacao()
+
 if (len(sys.argv)>1):
     codigoEdital = str(sys.argv[1])
     enviarLinksParaAvaliadores(codigoEdital)
