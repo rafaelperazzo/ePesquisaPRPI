@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html>
   <head>
 	  <style>
@@ -65,23 +66,78 @@ p.reprovado {
     <b>Total: {{total}}</b>
     <div class="row">
       <div class="column">
-        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda.png')}}" style="width:100%" alt="" align="center"></center>
-        <center><figcaption>Gráfico 1: Percentual de propostas por unidade academica.</figcaption></center>
+        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 1: Percentual de propostas por unidade acadêmica.</figcaption></center>
       </div>
       <div class="column">
-        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda-2.png')}}" style="width:100%" alt="" align="center"></center>
+        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda-2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
         <center><figcaption>Gráfico 2: Quantidade de propostas por unidade acadêmica.</figcaption></center>
       </div>
     </div>
     <br>
     <div class="row">
       <div class="column">
-        <center><img src="{{ url_for('static', filename='/plots/grafico-novos1.png')}}" style="width:100%" alt="" align="center"></center>
-        <center><figcaption>Gráfico 3: Situação (em percentual) dos projetos novos.</figcaption></center>
+        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda-bolsas-1.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 3: Percentual de demanda por bolsas por unidade acadêmica.</figcaption></center>
       </div>
       <div class="column">
-        <center><img src="{{ url_for('static', filename='/plots/grafico-novos2.png')}}" style="width:100%" alt="" align="center"></center>
-        <center><figcaption>Gráfico 4: Situação (em quantidades) dos projetos novos.</figcaption></center>
+        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda-bolsas-2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 4: Quantidade de demanda de bolsas por unidade acadêmica.</figcaption></center>
+      </div>
+    </div>
+    <br>
+    <div class="row">
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-novos1.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 5: Situação (em percentual) dos projetos novos.</figcaption></center>
+      </div>
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-novos2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 6: Situação (em quantidades) dos projetos novos.</figcaption></center>
+      </div>
+    </div>
+    <br>
+    <div class="row">
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-avaliadores1.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 7: Respostas aos convites de avaliação.</figcaption></center>
+      </div>
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-avaliadores2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 8: Totais de respostas aos convites de avaliação.</figcaption></center>
+      </div>
+    </div>
+    <br>
+    <div class="row">
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-avaliacoes1.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 9: Situação das avaliações.</figcaption></center>
+      </div>
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-avaliacoes2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 10: Totais avaliações.</figcaption></center>
+      </div>
+    </div>
+    <br>
+    <div class="row">
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-score2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 11: Média do ScoreLattes por Unidade Acadêmica.</figcaption></center>
+      </div>
+    </div>
+    <BR>
+
+        <center><img src="{{ url_for('static', filename='/plots/grafico-scoreArea2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:50%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 12: Média do ScoreLattes por Área Capes.</figcaption></center>
+    <br>
+    <div class="row">
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-tempoAvaliacao1.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 13: Quantidades percentuais de tempo de avaliação (em dias).</figcaption></center>
+      </div>
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-tempoAvaliacao2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 14: Quantidade de avaliações concluídas por unidade de tempo (dias).</figcaption></center>
       </div>
     </div>
     <hr>
@@ -141,7 +197,7 @@ p.reprovado {
 
     <hr>
     <h1>PROJETOS NOVOS (em avaliação)</h1>
-    
+
     <table>
       <th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Projeto</th><th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
       <th>Aprovados</th><th>NÃO Aprovados</th><th>Indefinidos</th><th>Situação</th>

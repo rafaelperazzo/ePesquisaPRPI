@@ -1037,7 +1037,7 @@ def obterColunaUnica(tabela,coluna,colunaId,valorId):
         cursor.close()
         conn.close()
 
-def gerarGraficos(demandas,grafico1,grafico2):
+def gerarGraficos(demandas,grafico1,grafico2,rotacao=0):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -1058,8 +1058,8 @@ def gerarGraficos(demandas,grafico1,grafico2):
     for bar in bars:
         yval = bar.get_height()
         plt.text(bar.get_x(), yval + .005, int(yval),fontweight='bold')
-    plt.xticks(y_pos, unidades)
-    plt.savefig(PLOTS_DIR + grafico2)
+    plt.xticks(y_pos, unidades,rotation=rotacao)
+    plt.savefig(PLOTS_DIR + grafico2, bbox_inches = "tight")
 
 @app.route("/editalProjeto", methods=['GET', 'POST'])
 def editalProjeto():
@@ -1089,10 +1089,21 @@ def editalProjeto():
             consulta_novos = consulta_novos + """ FROM editalProjeto,avaliacoes WHERE tipo=""" + codigoEdital + """ AND valendo=1 AND categoria=1
             AND editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id ORDER BY editalProjeto.ua,editalProjeto.id"""
             demanda = """SELECT ua,count(id) FROM editalProjeto WHERE valendo=1 and tipo=""" + codigoEdital + """ GROUP BY ua ORDER BY ua"""
+            demanda_bolsas = """SELECT ua,sum(bolsas) FROM editalProjeto WHERE valendo=1 and tipo=""" + codigoEdital + """ GROUP BY ua ORDER BY ua"""
             bolsas_ufca = int(obterColunaUnica("editais","quantidade_bolsas","id",codigoEdital))
             bolsas_cnpq = int(obterColunaUnica("editais","quantidade_bolsas_cnpq","id",codigoEdital))
             situacaoProjetosNovos = """SELECT if(situacao=1,"APROVADO",if(situacao=-1,"INDEFINIDO","NÃO APROVADO")) as situacaoD,count(id) FROM resumoProjetosNovos WHERE
             tipo=""" + codigoEdital + """ GROUP BY situacao ORDER BY situacao"""
+            respostaAvaliadores = """ SELECT if(aceitou=1,"ACEITOU AVALIAR",if(aceitou=-1,"NÃO RESPONDEU","NÃO ACEITOU AVALIAR")) as resposta,count(avaliacoes.id) FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND
+            tipo=""" + codigoEdital + """ AND valendo=1 AND categoria=1 GROUP BY aceitou"""
+            dadosAvaliacoes = """SELECT if(finalizado=1,"FINALIZADO","EM AVALIAÇÃO/NÃO SINALIZOU") as finalizados,count(avaliacoes.id) FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND
+            tipo=""" + codigoEdital + """ AND valendo=1 and categoria=1 AND aceitou!=0 GROUP BY finalizado"""
+            dadosScoreLattes = """SELECT ua, ROUND(AVG(scorelattes)) as media FROM editalProjeto WHERE valendo=1 AND
+            tipo=""" + codigoEdital + """ GROUP BY ua ORDER BY media"""
+            dadosScoreLattesArea = """SELECT SUBSTRING(area_capes,1,30) as area, ROUND(AVG(scorelattes)) as media FROM editalProjeto WHERE valendo=1 AND
+            tipo=""" + codigoEdital + """ GROUP BY area_capes ORDER BY area"""
+            tempoAvaliacao = """SELECT TIMESTAMPDIFF(DAY,data_envio,data_avaliacao) as tempo,count(avaliacoes.id) total FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND valendo=1 and
+            tipo=""" + codigoEdital + """ and finalizado=1 GROUP BY TIMESTAMPDIFF(DAY,data_envio,data_avaliacao)"""
             try:
                 cursor.execute(consulta)
                 total = cursor.rowcount
@@ -1103,10 +1114,28 @@ def editalProjeto():
                 linhas_novos = cursor.fetchall()
                 cursor.execute(demanda)
                 linhas_demanda = cursor.fetchall()
+                cursor.execute(demanda_bolsas)
+                linhas_demanda_bolsas = cursor.fetchall()
                 cursor.execute(situacaoProjetosNovos)
                 dadosProjetosNovos = cursor.fetchall()
+                cursor.execute(respostaAvaliadores)
+                linhasRespostasAvaliadores = cursor.fetchall()
+                cursor.execute(dadosAvaliacoes)
+                linhasAvaliacoes = cursor.fetchall()
+                cursor.execute(dadosScoreLattes)
+                linhasScoreLattes = cursor.fetchall()
+                cursor.execute(dadosScoreLattesArea)
+                linhasScoreLattesArea = cursor.fetchall()
+                cursor.execute(tempoAvaliacao)
+                linhasTempoAvaliacao = cursor.fetchall()
                 gerarGraficos(linhas_demanda,"grafico-demanda.png","grafico-demanda-2.png")
+                gerarGraficos(linhas_demanda_bolsas,"grafico-demanda-bolsas-1.png","grafico-demanda-bolsas-2.png")
                 gerarGraficos(dadosProjetosNovos,"grafico-novos1.png","grafico-novos2.png")
+                gerarGraficos(linhasRespostasAvaliadores,"grafico-avaliadores1.png","grafico-avaliadores2.png")
+                gerarGraficos(linhasAvaliacoes,"grafico-avaliacoes1.png","grafico-avaliacoes2.png")
+                gerarGraficos(linhasScoreLattes,"grafico-score1.png","grafico-score2.png")
+                gerarGraficos(linhasScoreLattesArea,"grafico-scoreArea1.png","grafico-scoreArea2.png",90)
+                gerarGraficos(linhasTempoAvaliacao,"grafico-tempoAvaliacao1.png","grafico-tempoAvaliacao2.png")
                 return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq))
             except:
                 e = sys.exc_info()[0]
