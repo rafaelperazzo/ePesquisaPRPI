@@ -24,10 +24,13 @@ import sys
 import xml.etree.ElementTree as ET
 from modules import scoreLattes as SL
 import json
+import numpy as np
+
 
 UPLOAD_FOLDER = '/home/perazzo/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
 WORKING_DIR='/home/perazzo/pesquisa/'
+PLOTS_DIR = '/home/perazzo/pesquisa/static/plots/'
 CURRICULOS_DIR='/home/perazzo/pesquisa/static/files/'
 SITE = "https://yoko.pet/pesquisa/static/files/"
 
@@ -210,9 +213,10 @@ def getEditaisAbertos():
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    consulta = "SELECT id,nome,deadline FROM editais WHERE now()<deadline ORDER BY id DESC"
+    consulta = """SELECT id,nome,DATE_FORMAT(deadline,'%d/%m/%Y - %H:%i') FROM editais WHERE now()<deadline ORDER BY id DESC"""
     cursor.execute(consulta)
     linhas = cursor.fetchall()
+    cursor.close()
     conn.close()
     return(linhas)
 
@@ -872,11 +876,21 @@ def executarSelect(consulta):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    cursor.execute(consulta)
-    total = cursor.rowcount
-    resultado = cursor.fetchall()
-    conn.close()
-    return (resultado,total)
+    try:
+        cursor.execute(consulta)
+        total = cursor.rowcount
+        resultado = cursor.fetchall()
+        conn.close()
+        return (resultado,total)
+    except:
+        e = sys.exc_info()[0]
+        logging.error(e)
+        logging.error("ERRO Na função executarSelect. Ver consulta abaixo.")
+        logging.error(consulta)
+    finally:
+        cursor.close()
+        conn.close()
+
 
 def avaliacoesEncerradas(codigoEdital):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
@@ -999,6 +1013,54 @@ def resultados():
     else:
         return("OK")
 
+'''
+Retorna uma coluna de uma linha única dado uma chave primária
+'''
+def obterColunaUnica(tabela,coluna,colunaId,valorId):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    consulta = "SELECT " + coluna + " FROM " + tabela + " WHERE " + colunaId + "=" + valorId
+    resultado = "0"
+    try:
+        cursor.execute(consulta)
+        linhas = cursor.fetchall()
+        for linha in linhas:
+            resultado = unicode(linha[0])
+        return(resultado)
+    except:
+        e = sys.exc_info()[0]
+        logging.error(e)
+        logging.error("ERRO Na função obtercolunaUnica. Ver consulta abaixo.")
+        logging.error(consulta)
+    finally:
+        cursor.close()
+        conn.close()
+
+def gerarGraficos(demandas,grafico1,grafico2):
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    unidades = []
+    fatias = []
+    for linha in demandas:
+        unidades.append(unicode(linha[0]))
+        fatias.append(float(linha[1]))
+
+    fig1,ax1 = plt.subplots()
+    ax1.pie(fatias,labels=unidades,autopct='%1.1f%%',shadow=True,startangle=90)
+    ax1.axis('equal')
+    plt.savefig(PLOTS_DIR + grafico1)
+
+    plt.clf()
+    y_pos = np.arange(len(unidades))
+    bars = plt.bar(y_pos, fatias)
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(bar.get_x(), yval + .005, int(yval),fontweight='bold')
+    plt.xticks(y_pos, unidades)
+    plt.savefig(PLOTS_DIR + grafico2)
+
 @app.route("/editalProjeto", methods=['GET', 'POST'])
 def editalProjeto():
     #SELECT editalProjeto.id,editalProjeto.nome,GROUP_CONCAT(avaliacoes.avaliador,"(",avaliacoes.finalizado,")") as avaliadores FROM editalProjeto,avaliacoes WHERE tipo=3 and categoria=1 and valendo=1 and editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id
@@ -1026,6 +1088,11 @@ def editalProjeto():
             sum(avaliacoes.finalizado),sum(if(recomendacao=-1,1,0)), sum(if(recomendacao=0,1,0)),sum(if(recomendacao=1,1,0))"""
             consulta_novos = consulta_novos + """ FROM editalProjeto,avaliacoes WHERE tipo=""" + codigoEdital + """ AND valendo=1 AND categoria=1
             AND editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id ORDER BY editalProjeto.ua,editalProjeto.id"""
+            demanda = """SELECT ua,count(id) FROM editalProjeto WHERE valendo=1 and tipo=""" + codigoEdital + """ GROUP BY ua ORDER BY ua"""
+            bolsas_ufca = int(obterColunaUnica("editais","quantidade_bolsas","id",codigoEdital))
+            bolsas_cnpq = int(obterColunaUnica("editais","quantidade_bolsas_cnpq","id",codigoEdital))
+            situacaoProjetosNovos = """SELECT if(situacao=1,"APROVADO",if(situacao=-1,"INDEFINIDO","NÃO APROVADO")) as situacaoD,count(id) FROM resumoProjetosNovos WHERE
+            tipo=""" + codigoEdital + """ GROUP BY situacao ORDER BY situacao"""
             try:
                 cursor.execute(consulta)
                 total = cursor.rowcount
@@ -1034,27 +1101,13 @@ def editalProjeto():
                 cursor.execute(consulta_novos)
                 total_novos = cursor.rowcount
                 linhas_novos = cursor.fetchall()
-                '''
-                try:
-                    for linha in linhas_novos:
-                        recomendacao = str(linha[6])
-                        recomendacao.replace("-1","NAO CONCLUIDA")
-                        recomendacao.replace("1","RECOMENDADO")
-                        recomendacao.replace("0","NAO RECOMENDADO")
-                        #linha[6] = unicode(recomendacao)
-                        logging.debug(unicode(recomendacao))
-                        aceitou = str(linha[8])
-                        aceitou.replace("-1","NAO INFORMADO")
-                        aceitou.replace("1","SIM")
-                        aceitou.replace("0","NAO")
-                        logging.debug(unicode(recomendacao))
-                        #linha[8] = unicode(aceitou)
-                except:
-                    e = sys.exc_info()[0]
-                    logging.error(e)
-                    logging.error("ERRO Na função  MUDAR DESCRICAO")
-                '''
-                return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos))
+                cursor.execute(demanda)
+                linhas_demanda = cursor.fetchall()
+                cursor.execute(situacaoProjetosNovos)
+                dadosProjetosNovos = cursor.fetchall()
+                gerarGraficos(linhas_demanda,"grafico-demanda.png","grafico-demanda-2.png")
+                gerarGraficos(dadosProjetosNovos,"grafico-novos1.png","grafico-novos2.png")
+                return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq))
             except:
                 e = sys.exc_info()[0]
                 logging.error(e)
@@ -1062,6 +1115,7 @@ def editalProjeto():
                 logging.error(consulta)
                 return("ERRO!")
             finally:
+                cursor.close()
                 conn.close()
 
         else:

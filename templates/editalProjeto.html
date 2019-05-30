@@ -10,7 +10,7 @@ table {
 
 td, th {
     border: 1px solid #dddddd;
-    text-align: left;
+    text-align: center;
     padding: 8px;
 }
 
@@ -30,6 +30,19 @@ p.reprovado {
   color: red;
 }
 
+.column {
+  float: left;
+  width: 45%;
+  padding: 5px;
+}
+
+/* Clearfix (clear floats) */
+.row::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
 </style>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <title>Propostas submetidas a edital</title>
@@ -38,6 +51,41 @@ p.reprovado {
 
     <h1><b>Propostas submetidas a Edital</b></h1>
     <h3>{{ descricao }} </h3>
+
+    <hr>
+    <h1><b>Resumo da Demanda</b></h1>
+    <table>
+      <th>Unidade Academica</th><th>Número de propostas submetidas</th><th>Previsão de cota (UFCA)</th><th>Previsão de cota (CNPq)</th>
+      {% for linha in linhas_demanda %}
+      <tr>
+        <td align="center">{{linha[0]}}</td><td align="center">{{linha[1]}}</td><td align="center">({{ ((linha[1]/total)*bolsas_ufca)|round|int }})</td><td align="center">({{ ((linha[1]/total)*bolsas_cnpq)|round|int }})</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <b>Total: {{total}}</b>
+    <div class="row">
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda.png')}}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 1: Percentual de propostas por unidade academica.</figcaption></center>
+      </div>
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-demanda-2.png')}}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 2: Quantidade de propostas por unidade acadêmica.</figcaption></center>
+      </div>
+    </div>
+    <br>
+    <div class="row">
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-novos1.png')}}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 3: Situação (em percentual) dos projetos novos.</figcaption></center>
+      </div>
+      <div class="column">
+        <center><img src="{{ url_for('static', filename='/plots/grafico-novos2.png')}}" style="width:100%" alt="" align="center"></center>
+        <center><figcaption>Gráfico 4: Situação (em quantidades) dos projetos novos.</figcaption></center>
+      </div>
+    </div>
+    <hr>
+    <h1>Propostas ordenadas pelo ID</h1>
     <table>
     <th>Id</th><th>Código do Edital</th><th>Categoria</th><th>Proponente</th><th>E-mail</th><th>UA</th><th>ScoreLattes</th><th>Título</th><th>Projeto</th><th>Plano1</th><th>Plano2</th><th>Lattes</th><th>Comprovantes</th><th>Data</th>
     <th>Início</th><th>Fim</th>
@@ -93,6 +141,7 @@ p.reprovado {
 
     <hr>
     <h1>PROJETOS NOVOS (em avaliação)</h1>
+    
     <table>
       <th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Projeto</th><th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
       <th>Aprovados</th><th>NÃO Aprovados</th><th>Indefinidos</th><th>Situação</th>

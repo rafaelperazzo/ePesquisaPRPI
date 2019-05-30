@@ -65,8 +65,8 @@ function ValidateSingleInputPDF(oInput) {
 		        document.forms["frmCadastroProjeto"]["numero_bolsas"].disabled = true;
 		    }
 		else { //Edital
-			document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = false;
-		    document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = false;
+			  //document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = false;
+		    //document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = false;
 		    document.forms["frmCadastroProjeto"]["numero_bolsas"].disabled = false;
 		}
 	}
@@ -84,10 +84,10 @@ function ValidateSingleInputPDF(oInput) {
 		}
 		else { //Projeto Novo
 			document.forms["frmCadastroProjeto"]["arquivo_projeto"].disabled = false;
-                document.forms["frmCadastroProjeto"]["arquivo_projeto"].required = true;
-                document.forms["frmCadastroProjeto"]["avaliador1_email"].required = true;
-                document.forms["frmCadastroProjeto"]["avaliador2_email"].required = true;
-                document.forms["frmCadastroProjeto"]["avaliador3_email"].required = true;
+      document.forms["frmCadastroProjeto"]["arquivo_projeto"].required = true;
+      document.forms["frmCadastroProjeto"]["avaliador1_email"].required = true;
+      document.forms["frmCadastroProjeto"]["avaliador2_email"].required = true;
+      document.forms["frmCadastroProjeto"]["avaliador3_email"].required = true;
 
 		}
 	}
@@ -120,6 +120,9 @@ function ValidateSingleInputPDF(oInput) {
     tipo_projeto();
     categoria_do_projeto();
     bolsas();
+    document.forms["frmCadastroProjeto"]["arquivo_plano1"].disabled = true;
+    document.forms["frmCadastroProjeto"]["arquivo_plano2"].disabled = true;
+    document.forms["frmCadastroProjeto"]["arquivo_projeto"].disabled = true;
 
   }
   function humano() {
@@ -357,6 +360,7 @@ maxlength="15000"></textarea><br>
       <h2> Planos de Trabalho</h2>
       <label><b>Bolsas solicitadas</b>:
         <select name="numero_bolsas" required="required" onchange="bolsas()">
+          <option  disabled="disabled"  selected="selected" value=""> --selecione-- </option>
           <option value="0">0</option>
           <option value="1">1</option>
           <option value="2">2</option>

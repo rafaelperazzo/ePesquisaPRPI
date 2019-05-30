@@ -38,6 +38,7 @@ def atualizar(consulta):
         logging.debug(e)
         conn.rollback()
     finally:
+        cursor.close()
         conn.close()
 
 def lattes_detalhado(codigoEdital):
@@ -53,9 +54,11 @@ def lattes_detalhado(codigoEdital):
             area_capes = str(linha[1])
             idProjeto = str(linha[2])
             producao = "INDISPONIVEL"
+            pontuacao=-1;
             try:
                 print("Calculando o lattes do ID: " + idProjeto)
                 producao = calcularScoreLattes(1,area_capes,"2014","2019",arquivo)
+                pontuacao = calcularScoreLattes(0,area_capes,"2014","2019",arquivo)
             except e:
                 e = sys.exc_info()[0]
                 logging.debug(e)
@@ -64,12 +67,15 @@ def lattes_detalhado(codigoEdital):
             finally:
                 update = "UPDATE editalProjeto SET scorelattes_detalhado=\"" + producao + "\" WHERE id=" + idProjeto
                 atualizar(update)
+                update = "UPDATE editalProjeto SET scorelattes=" + str(pontuacao) + " WHERE id=" + idProjeto
+                atualizar(update)
 
     except MySQLdb.Error, e:
         e = sys.exc_info()[0]
         logging.debug(e)
         print(e)
     finally:
+        cursor.close()
         conn.close()
 
 

@@ -58,6 +58,7 @@ def atualizar(consulta):
 	logging.debug(consulta)
         #conn.rollback()
     finally:
+        cursor.close()
         conn.close()
 
 def gerarLinkAvaliacao():
@@ -74,7 +75,7 @@ def gerarLinkAvaliacao():
         link = SITE + "?id=" + idProjeto + "&token=" + token
         consulta = "UPDATE avaliacoes SET link=\"" + link + "\"" + " WHERE id=" + id
         atualizar(consulta)
-
+    cursor.close()
     conn.close()
 
 def getArquivo(edital,tipo):
@@ -91,6 +92,7 @@ def getArquivo(edital,tipo):
     for linha in linhas:
         arquivo = linha[0]
     arquivo = DOCUMENTOS_DIR + arquivo
+    cursor.close()
     conn.close()
     return (arquivo)
 
@@ -147,12 +149,13 @@ def prazoAvaliacao(codigoEdital):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    consulta = "SELECT deadline_avaliacao FROM editais WHERE id=" + codigoEdital
+    consulta = """SELECT DATE_FORMAT(deadline_avaliacao,'%d/%m/%Y') FROM editais WHERE id=""" + codigoEdital
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     resultado = ""
     for linha in linhas:
         resultado = linha[0]
+    cursor.close()
     conn.close()
     return (str(resultado))
 
@@ -163,6 +166,7 @@ def podeAvaliar(codigoEdital):
     consulta = "SELECT id,deadline_avaliacao FROM editais WHERE deadline_avaliacao>CURRENT_TIMESTAMP() AND id=" + codigoEdital
     cursor.execute(consulta)
     total = cursor.rowcount
+    cursor.close()
     conn.close()
     if (total==0): #Edital com avaliacoes encerradas
         return(False)
@@ -176,6 +180,7 @@ def jaAgradeceu(codigoEdital):
     consulta = "SELECT id,agradecimento FROM editais WHERE agradecimento=0 AND id=" + codigoEdital
     cursor.execute(consulta)
     total = cursor.rowcount
+    cursor.close()
     conn.close()
     if (total==1): #Agradecimento ainda não enviado
         return(False)
@@ -192,17 +197,21 @@ def descricaoEdital(codigoEdital):
     nomeEdital = "EDITAL NAO DEFINIDO"
     for linha in linhas:
         nomeEdital = unicode(linha[1])
+    cursor.close()
     conn.close()
     return (nomeEdital)
 
-def enviarLinksParaAvaliadores(codigoEdital):
+def enviarLinksParaAvaliadores(codigoEdital,novos=0):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND a.id=21"
     #WHERE datediff(current_timestamp(),data_envio)>10
     #consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria,e.tipo FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou!=0 AND e.categoria=1 AND e.tipo=" + codigoEdital
-    consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria,e.tipo FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou!=0 AND e.categoria=1 AND a.idProjeto IN (SELECT id FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + ")"
+    if novos==0:
+        consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria,e.tipo FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou!=0 AND e.categoria=1 AND a.idProjeto IN (SELECT id FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + ")"
+    else:
+        consulta = "SELECT e.id,e.titulo,e.resumo,a.avaliador,a.link,a.id,a.enviado,a.token,e.categoria,e.tipo FROM editalProjeto as e, avaliacoes as a WHERE e.id=a.idProjeto AND e.valendo=1 AND a.finalizado=0 AND a.aceitou!=0 AND e.categoria=1 AND a.enviado=0 AND a.idProjeto IN (SELECT id FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + ")"
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     if podeAvaliar(codigoEdital):
@@ -243,18 +252,21 @@ def enviarLinksParaAvaliadores(codigoEdital):
             html = html + "<h3>Site oficial do processo seletivo PRPI/UFCA: http://prpi.ufca.edu.br/ </h3><BR>\n"
             html = html + "<h3>Telefone institucional para contato direto com o coordenador: (88)3221-9566 - http://telefonia.ufca.edu.br </h3><BR>\n"
             html = html + "</body></html>"
+
             if envios==0:
                 enviarEmail(email,"[UFCA - Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html,1)
+                consulta_enviado = "UPDATE avaliacoes SET data_envio=CURRENT_TIMESTAMP() WHERE id=" + id_avaliacao
+                atualizar(consulta_enviado)
             else:
                 enviarEmail(email,"[UFCA - LEMBRETE de Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html,1)
             print("E-mail enviado para: " + email)
             enviado = enviado + 1
             consulta_enviado = "UPDATE avaliacoes SET enviado=" + str(enviado) + " WHERE id=" + id_avaliacao
             atualizar(consulta_enviado)
-            consulta_enviado = "UPDATE avaliacoes SET data_envio=CURRENT_TIMESTAMP() WHERE id=" + id_avaliacao
-            atualizar(consulta_enviado)
+
     else:
         print("Prazo de avaliação expirado para o edital selecionado.")
+    cursor.close()
     conn.close()
 
 def enviarAgradecimentosParaAvaliadores(codigoEdital):
@@ -288,6 +300,7 @@ def enviarAgradecimentosParaAvaliadores(codigoEdital):
         print("Agradecimento já enviado para o edital selecionado ou prazo de avaliação em andamento.")
     consulta_agradecimento = "UPDATE editais SET agradecimento=1 WHERE id=" + codigoEdital
     atualizar(consulta_agradecimento)
+    cursor.close()
     conn.close()
 
 
@@ -307,14 +320,21 @@ sys.setdefaultencoding('utf-8')
 
 #GERAR LINK PARA AVALIADORES
 codigoEdital = "0"
+enviarApenasParaNaoEnviados = 0
 gerarLinkAvaliacao()
 
-if (len(sys.argv)>1):
+if (len(sys.argv)==2):
+    print("Enviando e-mail para todos avaliadores que não finalizaram.")
     codigoEdital = str(sys.argv[1])
-    enviarLinksParaAvaliadores(codigoEdital)
+    enviarLinksParaAvaliadores(codigoEdital,enviarApenasParaNaoEnviados)
+elif (len(sys.argv)>2):
+    print("Enviando e-mail para todos avaliadores que não receberam o convite.")
+    codigoEdital = str(sys.argv[1])
+    enviarApenasParaNaoEnviados = int(sys.argv[2])
+    enviarLinksParaAvaliadores(codigoEdital,enviarApenasParaNaoEnviados)
 else:
-    enviarLinksParaAvaliadores("0")
+    enviarLinksParaAvaliadores("0",0)
 enviarEmail("rafael.mota@ufca.edu.br","[Cron Executado]","",u"Edital: [" + codigoEdital +u"]<BR> Solicitação de Avaliação/Agradecimento para avaliadores que não finalizaram.",0)
-enviarAgradecimentosParaAvaliadores(codigoEdital)
+#enviarAgradecimentosParaAvaliadores(codigoEdital)
 
 #lattes_detalhado("3")
