@@ -25,6 +25,7 @@ import xml.etree.ElementTree as ET
 from modules import scoreLattes as SL
 import json
 import numpy as np
+import pdfkit
 
 
 UPLOAD_FOLDER = '/home/perazzo/pesquisa/static/files'
@@ -33,11 +34,15 @@ WORKING_DIR='/home/perazzo/pesquisa/'
 PLOTS_DIR = '/home/perazzo/pesquisa/static/plots/'
 CURRICULOS_DIR='/home/perazzo/pesquisa/static/files/'
 SITE = "https://yoko.pet/pesquisa/static/files/"
+IMAGENS_URL = "https://yoko.pet/pesquisa/static/"
+DECLARACOES_DIR = '/home/perazzo/pesquisa/pdfs/'
+ROOT_SITE = 'https://yoko.pet'
 
 app = Flask(__name__)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['CURRICULOS_FOLDER'] = CURRICULOS_DIR
+app.config['DECLARACOES_FOLDER'] = DECLARACOES_DIR
 ## TODO: Preparar o log geral
 logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(asctime)s %(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
 
@@ -232,7 +237,25 @@ def declaracao():
         if 'idProjeto' in request.args:
             texto_declaracao = gerarDeclaracao(str(request.args['idProjeto']))
             data_agora = getData()
-            return render_template('a4.html',texto=texto_declaracao,data=data_agora,identificador=texto_declaracao[7])
+            try:
+                options = {
+                    'page-size': 'A4',
+                    'margin-top': '20mm',
+                    'margin-right': '20mm',
+                    'margin-bottom': '20mm',
+                    'margin-left': '20mm',
+}
+                arquivoDeclaracao = app.config['DECLARACOES_FOLDER'] + 'declaracao.pdf'
+                #pdfkit.from_string(render_template('a4.html',texto=texto_declaracao,data=data_agora,identificador=texto_declaracao[7],raiz=ROOT_SITE),arquivoDeclaracao)
+                #return send_from_directory(app.config['DECLARACOES_FOLDER'], 'declaracao.pdf')
+                #return send_file(arquivoDeclaracao, attachment_filename='arquivo.pdf')
+            except:
+                e = sys.exc_info()[0]
+                logging.error(e)
+                logging.error(arquivoDeclaracao)
+                logging.error("Nao foi possivel gerar o PDF da declaração.")
+            finally:
+                return render_template('a4.html',texto=texto_declaracao,data=data_agora,identificador=texto_declaracao[7],raiz=ROOT_SITE)
         else:
             logging.debug("Tentativa de gerar declaração, sem o id do projeto!")
             return("OK")
@@ -1060,6 +1083,7 @@ def gerarGraficos(demandas,grafico1,grafico2,rotacao=0):
         plt.text(bar.get_x(), yval + .005, int(yval),fontweight='bold')
     plt.xticks(y_pos, unidades,rotation=rotacao)
     plt.savefig(PLOTS_DIR + grafico2, bbox_inches = "tight")
+    plt.close('all')
 
 @app.route("/editalProjeto", methods=['GET', 'POST'])
 def editalProjeto():

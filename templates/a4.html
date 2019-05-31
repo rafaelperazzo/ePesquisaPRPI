@@ -28,7 +28,8 @@
 
     <!-- Write HTML just like a web page -->
     <article></article>
-    <center><img src="{{ url_for('static', filename='cabecalho.png')}}" width="100" height="150" alt=""></center>
+    <!--<center><img src="{{ url_for('static', filename='cabecalho.png')}}" width="100" height="150" alt=""></center> -->
+    <center><img src="{{raiz}}{{ url_for('static', filename='brasao_uniao.png')}}" width="100" height="130" alt=""></center>
     <center>
     MINISTÉRIO DA EDUCAÇÃO<br>
     UNIVERSIDADE FEDERAL DO CARIRI<br>
@@ -44,7 +45,7 @@ foi bolsista do Programa Institucional de Bolsas de Iniciação Científica
 ({{ texto[2] }}),
 sob orientação do professor(a) {{ texto[3] }},
 com o projeto intitulado <i>"{{ texto[4] }}"</i>, desempenhando suas atividades
-com carga horária de {{texto[8]}} horas semanais. 
+com carga horária de {{texto[8]}} horas semanais.
 <br><br>
 A participação do(a) discente em questão no referido Projeto de Pesquisa foi de {{ texto[5] }} a {{ texto[6] }}.
 </div>
@@ -53,13 +54,19 @@ A participação do(a) discente em questão no referido Projeto de Pesquisa foi 
   Juazeiro do Norte, {{data}}
 </div>
 <br><br>
-<center><img src="{{ url_for('static', filename='assinatura_rafael.png')}}" width="254" height="49" alt=""></center>
+<center><img src="{{raiz}}{{ url_for('static', filename='assinatura_rafael.png')}}" width="284" height="59" alt=""></center>
 <center>___________________________________</center><br>
 <center>RAFAEL PERAZZO BARBOSA MOTA</center><br>
 <center>COORDENADOR DE PESQUISA</center><br>
 <center>SIAPE: 1570709</center>
 <br><br><br><center><small><i>Código de Autenticação: {{ identificador }}. A autenticidade pode ser verificada em <a href="http://sites.ufca.edu.br/prpi/pesquisa/autenticacao-de-documentos/">http://prpi.ufca.edu.br</a></i></small></center><br><br><br><br>
-<center><img src="{{ url_for('static', filename='rodape.png')}}" width="785" height="161" alt="" align="left"></center>
+
+<footer>
+<!--<center><img src="{{raiz}}{{ url_for('static', filename='rodape.png')}}" width="785" height="161" alt="" align="left"></center>-->
+<hr>
+<small><center>Rua Tenente Raimundo Rocha, 1639, Cidade Universitária, Juazeiro do Norte/CE – Tel: (88) 3221-9330 <br>
+Site: www.ufca.edu.br -  E-mail: pesquisa.prpi@ufca.edu.br</center></small>
+</footer>
   </section>
 
 </body>

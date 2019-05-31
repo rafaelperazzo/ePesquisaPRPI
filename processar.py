@@ -259,6 +259,8 @@ def enviarLinksParaAvaliadores(codigoEdital,novos=0):
                 atualizar(consulta_enviado)
             else:
                 enviarEmail(email,"[UFCA - LEMBRETE de Solicitação de Avaliação de Projeto de Pesquisa]",mensagem,html,1)
+                consulta_enviado = "UPDATE avaliacoes SET data_envio2=CURRENT_TIMESTAMP() WHERE id=" + id_avaliacao
+                atualizar(consulta_enviado)
             print("E-mail enviado para: " + email)
             enviado = enviado + 1
             consulta_enviado = "UPDATE avaliacoes SET enviado=" + str(enviado) + " WHERE id=" + id_avaliacao
@@ -281,7 +283,7 @@ def enviarAgradecimentosParaAvaliadores(codigoEdital):
         for linha in linhas:
             email = unicode(linha[0])
             token = str(linha[1])
-            email = "rafael.mota@ufca.edu.br"
+            #email = "rafael.mota@ufca.edu.br"
             link = LINK_HOME + "declaracaoAvaliador?token=" + token
             mensagem = unicode("CARTA AGRADECIMENTO.")
             html = "<html><body>\n"
@@ -290,7 +292,7 @@ def enviarAgradecimentosParaAvaliadores(codigoEdital):
             html = html + "Prezado(a) senhor(a), <BR>Gostaríamos de agradece-lo(a) pela participação como consultor ad-hoc no processo seletivo (" + descricaoEdital(codigoEdital) +  ") da Coordenadoria de Pesquisa da UFCA.<BR>"
             html = html + "A carta agradecimento oficial segue em anexo a este e-mail.<BR>"
             html = html + "<h2>Link permanente para acessar a declaração de participação: <a href=\"" + link + "\">Clique Aqui</a>. Em caso de erros no nome, favor responder este e-mail solicitando a correção.</h2><BR>\n"
-            html = html + "<h3>Site oficial do processo seletivo PRPI/UFCA: http://sites.ufca.edu.br/prpi/editais/edital-012019funcapprpi/ </h3><BR>\n"
+            html = html + "<h3>Site oficial do processo seletivo PRPI/UFCA: http://prpi.ufca.edu.br/ </h3><BR>\n"
             html = html + "<h3>Telefone institucional para contato direto com o coordenador: (88)3221-9566 - http://telefonia.ufca.edu.br </h3><BR>\n"
             html = html + "</body></html>"
             enviarEmail(email,"[UFCA - AGRADECIMENTO]",mensagem,html,2)
@@ -336,5 +338,3 @@ else:
     enviarLinksParaAvaliadores("0",0)
 enviarEmail("rafael.mota@ufca.edu.br","[Cron Executado]","",u"Edital: [" + codigoEdital +u"]<BR> Solicitação de Avaliação/Agradecimento para avaliadores que não finalizaram.",0)
 #enviarAgradecimentosParaAvaliadores(codigoEdital)
-
-#lattes_detalhado("3")
