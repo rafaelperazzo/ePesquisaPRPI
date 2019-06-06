@@ -5,7 +5,7 @@
     <title>Inserir Avaliador</title>
   </head>
   <body>
-    <i>Total de Projetos com pendências de avaliação: {{ totalDeLinhas }}</i>
+    <i>Total de Projetos: {{ totalDeLinhas }}</i>
     <form name="frmEnviar" action="/pesquisa/inserirAvaliador" method="POST"><br>
       <b>Projeto</b>:
       <select name="txtProjeto" required="required">
@@ -23,5 +23,6 @@
     </form>
     <p><br>
     </p>
+    <a href="/pesquisa/editalProjeto?edital={{codigoEdital}}"> VOLTAR PARA LISTA DE PROJETOS</a>
   </body>
 </html>

@@ -6,7 +6,9 @@
 #SELECT editalProjeto.titulo, (SELECT sum(avaliacoes.finalizado) FROM avaliacoes WHERE avaliacoes.idProjeto=editalProjeto.id) as soma FROM editalProjeto WHERE id=25;
 from flask import Flask
 from flask import render_template
-from flask import request,url_for,send_file,send_from_directory,redirect,flash,Markup,Response
+from flask import request,url_for,send_file,send_from_directory,redirect,flash,Markup,Response,session
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 import sqlite3
 import MySQLdb
@@ -26,7 +28,7 @@ from modules import scoreLattes as SL
 import json
 import numpy as np
 import pdfkit
-
+from functools import wraps
 
 UPLOAD_FOLDER = '/home/perazzo/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
@@ -39,10 +41,11 @@ DECLARACOES_DIR = '/home/perazzo/pesquisa/pdfs/'
 ROOT_SITE = 'https://yoko.pet'
 
 app = Flask(__name__)
-
+auth = HTTPBasicAuth()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['CURRICULOS_FOLDER'] = CURRICULOS_DIR
 app.config['DECLARACOES_FOLDER'] = DECLARACOES_DIR
+
 ## TODO: Preparar o log geral
 logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(asctime)s %(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
 
@@ -50,6 +53,8 @@ logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(as
 lines = [line.rstrip('\n') for line in open(WORKING_DIR + 'senhas.pass')]
 PASSWORD = lines[0]
 GMAIL_PASSWORD = lines[1]
+SESSION_SECRET_KEY = lines[2]
+app.config['SECRET_KEY'] = SESSION_SECRET_KEY
 
 def removerAspas(texto):
     resultado = texto.replace('"',' ')
@@ -105,6 +110,7 @@ def atualizar(consulta):
 	logging.debug(consulta)
         #conn.rollback()
     finally:
+        cursor.close()
         conn.close()
 
 
@@ -225,6 +231,45 @@ def getEditaisAbertos():
     conn.close()
     return(linhas)
 
+'''
+INÍCIO AUTENTICAÇÃO
+**************************************************************
+'''
+@auth.verify_password
+def verify_password(username, password):
+    """This function is called to check if a username /
+    password combination is valid.
+    """
+    try:
+        conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+        conn.select_db('pesquisa')
+        cursor  = conn.cursor()
+        consulta = """SELECT id FROM users WHERE username='""" + username + """' AND password=PASSWORD('""" + password + """')"""
+        cursor.execute(consulta)
+        total = cursor.rowcount
+        if (total==0):
+            return (False)
+        else:
+            return (True)
+    except:
+        e = sys.exc_info()[0]
+        logging.error(e)
+        logging.error("ERRO Na função check_auth. Ver consulta abaixo.")
+        logging.error(consulta)
+    finally:
+        cursor.close()
+        conn.close()
+
+'''
+FIM AUTENTICAÇÃO
+**************************************************************
+'''
+
+@app.route('/segredo')
+@auth.login_required
+def secret_page():
+    session['username'] = auth.username()
+    return (session['username'])
 
 @app.route("/")
 def home():
@@ -511,6 +556,7 @@ def cadastrarProjeto():
         logging.error(e)
         logging.error("Procedimento para o ID: " + ultimo_id_str + " finalizado. Erros ocorreram ao tentar atualizar o scorelattes.")
     finally:
+        cursor.close()
         conn.close()
 
     try:
@@ -760,22 +806,27 @@ def avaliacoesNegadas():
         conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
         conn.select_db('pesquisa')
         cursor  = conn.cursor()
-        codigoEdital = str(request.args.get('edital'))
-        #consulta = "SELECT editalProjeto.id,CONCAT(SUBSTRING(editalProjeto.titulo,1,80),\" - (\",editalProjeto.nome,\" )\"),sum(avaliacoes.finalizado) as soma FROM editalProjeto,avaliacoes WHERE editalProjeto.id=avaliacoes.idProjeto AND editalProjeto.categoria=1 AND editalProjeto.valendo=1 AND editalProjeto.tipo=" + codigoEdital + " GROUP by avaliacoes.idProjeto order by soma"
-        #consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE (resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes)<2 AND resumoGeralAvaliacoes.tipo=" + codigoEdital + " order by resultado"
-        consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + " ORDER BY resultado"
-        try:
-            cursor.execute(consulta)
-            linha = cursor.fetchall()
-            total = cursor.rowcount
-            conn.close()
-            return(render_template('inserirAvaliador.html',listaProjetos=linha,totalDeLinhas=total))
-        except:
-            e = sys.exc_info()[0]
-            logging.error(e)
-            logging.error(consulta)
-            conn.close()
-            return(consulta)
+        if 'edital' in request.args:
+            codigoEdital = str(request.args.get('edital'))
+            if 'id' in request.args:
+                idProjeto = str(request.args.get('id'))
+                consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + " AND id = " + idProjeto +" ORDER BY aceites+rejeicoes, id"
+            else:
+                consulta = "SELECT resumoGeralAvaliacoes.id,CONCAT(SUBSTRING(resumoGeralAvaliacoes.titulo,1,80),\" - (\",resumoGeralAvaliacoes.nome,\" )\"),(resumoGeralAvaliacoes.aceites+resumoGeralAvaliacoes.rejeicoes) as resultado,resumoGeralAvaliacoes.indefinido FROM resumoGeralAvaliacoes WHERE ((aceites+rejeicoes<2) OR (aceites=rejeicoes)) AND tipo=" + codigoEdital + " ORDER BY aceites+rejeicoes, id"
+            try:
+                cursor.execute(consulta)
+                linha = cursor.fetchall()
+                total = cursor.rowcount
+                conn.close()
+                return(render_template('inserirAvaliador.html',listaProjetos=linha,totalDeLinhas=total,codigoEdital=codigoEdital))
+            except:
+                e = sys.exc_info()[0]
+                logging.error(e)
+                logging.error(consulta)
+                conn.close()
+                return(consulta)
+        else:
+            return ("OK")
     else:
         return("OK")
 
@@ -803,6 +854,7 @@ def quantidades(consulta):
 
 ## TODO: Finalizar as estatisticas - Projetos aprovados devem ser vir da tabela editalProjeto
 @app.route("/estatisticas", methods=['GET', 'POST'])
+@auth.login_required
 def estatisticas():
     if request.method == "GET":
         codigoEdital = str(request.args.get('edital'))
@@ -930,6 +982,7 @@ def avaliacoesEncerradas(codigoEdital):
 
 
 @app.route("/resultados", methods=['GET', 'POST'])
+@auth.login_required
 def resultados():
     if request.method == "GET":
 
@@ -1086,6 +1139,7 @@ def gerarGraficos(demandas,grafico1,grafico2,rotacao=0):
     plt.close('all')
 
 @app.route("/editalProjeto", methods=['GET', 'POST'])
+@auth.login_required
 def editalProjeto():
     #SELECT editalProjeto.id,editalProjeto.nome,GROUP_CONCAT(avaliacoes.avaliador,"(",avaliacoes.finalizado,")") as avaliadores FROM editalProjeto,avaliacoes WHERE tipo=3 and categoria=1 and valendo=1 and editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id
     #SELECT editalProjeto.id,editalProjeto.nome,GROUP_CONCAT(avaliacoes.avaliador ORDER BY avaliador SEPARATOR '\n') as avaliadores,GROUP_CONCAT(avaliacoes.recomendacao ORDER BY avaliador SEPARATOR '\n') as recomendacoes FROM editalProjeto,avaliacoes WHERE tipo=3 and categoria=1 and valendo=1 and editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id ORDER BY editalProjeto.id
@@ -1106,12 +1160,17 @@ def editalProjeto():
             conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
             conn.select_db('pesquisa')
             cursor  = conn.cursor()
-            consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY id"
+            tipo_classificacao = int(obterColunaUnica("editais","classificacao","id",codigoEdital))
+            #ORDENA DE ACORDO COM O TIPO DE CLASSIFICAÇÃO: 1 - POR UA; 2 - POR LATTES
+            if (tipo_classificacao==1):
+                consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim,if(produtividade=0,\"PROD. CNPq\",if(produtividade=1,\"BPI FUNCAP\",\"NORMAL\")) as prioridade FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY ua,produtividade,scorelattes DESC"
+            else:
+                consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim,if(produtividade=0,\"PROD. CNPq\",if(produtividade=1,\"BPI FUNCAP\",\"NORMAL\")) as prioridade FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY produtividade,scorelattes DESC"
             consulta_novos = """SELECT editalProjeto.id,nome,ua,titulo,arquivo_projeto,
             GROUP_CONCAT(avaliacoes.avaliador ORDER BY avaliador SEPARATOR '<BR>') as avaliadores,GROUP_CONCAT(avaliacoes.recomendacao ORDER BY avaliador SEPARATOR '<BR>') as recomendacoes,GROUP_CONCAT(avaliacoes.enviado ORDER BY avaliador SEPARATOR '<BR>') as enviado,GROUP_CONCAT(avaliacoes.aceitou ORDER BY avaliador SEPARATOR '<BR>') as aceitou,
-            sum(avaliacoes.finalizado),sum(if(recomendacao=-1,1,0)), sum(if(recomendacao=0,1,0)),sum(if(recomendacao=1,1,0))"""
+            sum(avaliacoes.finalizado) as finalizados,sum(if(recomendacao=-1,1,0)), sum(if(recomendacao=0,1,0)),sum(if(recomendacao=1,1,0)),palavras"""
             consulta_novos = consulta_novos + """ FROM editalProjeto,avaliacoes WHERE tipo=""" + codigoEdital + """ AND valendo=1 AND categoria=1
-            AND editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id ORDER BY editalProjeto.ua,editalProjeto.id"""
+            AND editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id ORDER BY finalizados,editalProjeto.ua,editalProjeto.id"""
             demanda = """SELECT ua,count(id) FROM editalProjeto WHERE valendo=1 and tipo=""" + codigoEdital + """ GROUP BY ua ORDER BY ua"""
             demanda_bolsas = """SELECT ua,sum(bolsas) FROM editalProjeto WHERE valendo=1 and tipo=""" + codigoEdital + """ GROUP BY ua ORDER BY ua"""
             bolsas_ufca = int(obterColunaUnica("editais","quantidade_bolsas","id",codigoEdital))
@@ -1128,6 +1187,8 @@ def editalProjeto():
             tipo=""" + codigoEdital + """ GROUP BY area_capes ORDER BY area"""
             tempoAvaliacao = """SELECT TIMESTAMPDIFF(DAY,data_envio,data_avaliacao) as tempo,count(avaliacoes.id) total FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND valendo=1 and
             tipo=""" + codigoEdital + """ and finalizado=1 GROUP BY TIMESTAMPDIFF(DAY,data_envio,data_avaliacao)"""
+            oferta_demanda = """(select "OFERTA", sum(quantidade_bolsas)+sum(quantidade_bolsas_cnpq) AS C2 FROM editais WHERE
+            id=""" + codigoEdital + """) UNION (SELECT "DEMANDA", sum(bolsas) FROM editalProjeto WHERE valendo=1 and tipo=""" + codigoEdital + """)"""
             try:
                 cursor.execute(consulta)
                 total = cursor.rowcount
@@ -1152,7 +1213,10 @@ def editalProjeto():
                 linhasScoreLattesArea = cursor.fetchall()
                 cursor.execute(tempoAvaliacao)
                 linhasTempoAvaliacao = cursor.fetchall()
+                cursor.execute(oferta_demanda)
+                linhas_oferta_demanda = cursor.fetchall()
                 gerarGraficos(linhas_demanda,"grafico-demanda.png","grafico-demanda-2.png")
+                gerarGraficos(linhas_oferta_demanda,"grafico-oferta-demanda.png","grafico-oferta-demanda-2.png")
                 gerarGraficos(linhas_demanda_bolsas,"grafico-demanda-bolsas-1.png","grafico-demanda-bolsas-2.png")
                 gerarGraficos(dadosProjetosNovos,"grafico-novos1.png","grafico-novos2.png")
                 gerarGraficos(linhasRespostasAvaliadores,"grafico-avaliadores1.png","grafico-avaliadores2.png")
@@ -1160,7 +1224,7 @@ def editalProjeto():
                 gerarGraficos(linhasScoreLattes,"grafico-score1.png","grafico-score2.png")
                 gerarGraficos(linhasScoreLattesArea,"grafico-scoreArea1.png","grafico-scoreArea2.png",90)
                 gerarGraficos(linhasTempoAvaliacao,"grafico-tempoAvaliacao1.png","grafico-tempoAvaliacao2.png")
-                return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq))
+                return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq,codigoEdital=codigoEdital))
             except:
                 e = sys.exc_info()[0]
                 logging.error(e)

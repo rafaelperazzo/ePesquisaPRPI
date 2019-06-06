@@ -19,6 +19,22 @@ tr:nth-child(even) {
     background-color: #dddddd;
 }
 
+table.novos {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    width: 50%;
+}
+
+td.novos, th.novos {
+    border: 1px solid #dddddd;
+    text-align: center;
+    padding: 8px;
+}
+
+tr.novos:nth-child(even) {
+    background-color: #CCFFCC;
+}
+
 p.aprovado {
   color: green;
 }
@@ -64,6 +80,10 @@ p.reprovado {
       {% endfor %}
     </table>
     <b>Total: {{total}}</b>
+
+    <center><img src="{{ url_for('static', filename='/plots/grafico-oferta-demanda-2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:50%" alt="" align="center"></center>
+    <center><figcaption>Gráfico 0: Oferta/Demanda de bolsas (total).</figcaption></center>
+    <br>
     <div class="row">
       <div class="column">
         <center><img src="{{ url_for('static', filename='/plots/grafico-demanda.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
@@ -143,7 +163,7 @@ p.reprovado {
     <hr>
     <h1>Propostas ordenadas pelo ID</h1>
     <table>
-    <th>Id</th><th>Código do Edital</th><th>Categoria</th><th>Proponente</th><th>E-mail</th><th>UA</th><th>ScoreLattes</th><th>Título</th><th>Projeto</th><th>Plano1</th><th>Plano2</th><th>Lattes</th><th>Comprovantes</th><th>Data</th>
+    <th>Id</th><th>Código do Edital</th><th>Categoria</th><th>Proponente</th><th>E-mail</th><th>UA</th><th>Prioridade</th><th>ScoreLattes</th><th>Título</th><th>Projeto</th><th>Plano1</th><th>Plano2</th><th>Lattes</th><th>Comprovantes</th><th>Data</th>
     <th>Início</th><th>Fim</th>
     {% for linha in listaProjetos %}
     <tr>
@@ -156,7 +176,7 @@ p.reprovado {
       PROJETO EM ANDAMENTO
       {% endif %}
     </td>
-    <td>{{ linha[3] }}</td><td>{{ linha[4] }}</td><td>{{ linha[5] }}</td><td><a href="/pesquisa/lattesDetalhado?id={{ linha[0] }}">{{ linha[6] }}</a></td><td>{{ linha[7] }}</td>
+    <td>{{ linha[3] }}</td><td>{{ linha[4] }}</td><td>{{ linha[5] }}</td><td>{{ linha[16] }}</td><td><a href="/pesquisa/lattesDetalhado?id={{ linha[0] }}">{{ linha[6] }}</a></td><td>{{ linha[7] }}</td>
     <td>
       {% if linha[8]!="0" %}
       <a href="/pesquisa/static/files/{{ linha[8] }}">PROJETO</a>
@@ -199,11 +219,36 @@ p.reprovado {
     <h1>PROJETOS NOVOS (em avaliação)</h1>
 
     <table>
-      <th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Projeto</th><th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
+      <th>Finalizadas as Avaliações ?</th><th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Palavras-Chave</th><th>Qtde de avaliações finalizadas</th><th>Inserir Consultor<th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
       <th>Aprovados</th><th>NÃO Aprovados</th><th>Indefinidos</th><th>Situação</th>
       {% for linha in novos %}
       <tr>
-        <td>{{linha[0]}}</td><td>{{linha[1]}}</td><td>{{linha[2]}}</td><td>{{linha[3]}}</td><td><a href="/pesquisa/static/files/{{ linha[4] }}">PROJETO</a></td><td>{{linha[5]|safe}}</td><td>{{linha[6]|safe}}</td>
+        <td>
+          {% if (linha[9]==0) %}
+            <img src="{{ url_for('static', filename='interrogacao_vermelha.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+            SEM AVALIAÇÕES!
+          {% endif %}
+          {% if (linha[9]==1) %}
+            <img src="{{ url_for('static', filename='interrogacao_amarela.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+            APENAS 1 AVALIAÇÃO!
+          {% endif %}
+          {% if (linha[9]>1) %}
+            {% if linha[12]-linha[11]==0 %}
+              <img src="{{ url_for('static', filename='interrogacao_amarela.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+              <br>EMPATADO
+            {% else %}
+              {% if linha[12]-linha[11]>0 %}
+                <img src="{{ url_for('static', filename='aprovado.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+              {% else %}
+                <img src="{{ url_for('static', filename='reprovado.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        </td>
+        <td>{{linha[0]}}</td><td>{{linha[1]}}</td><td>{{linha[2]}}</td>
+        <td>
+          <a href="/pesquisa/static/files/{{ linha[4] }}">{{linha[3]}}</a></td>
+        <td>{{linha[13]}}<td>{{linha[9]}}</td></td><td><a href="/pesquisa/avaliacoesNegadas?edital={{codigoEdital}}&id={{linha[0]}}">Adicionar consultor</a></td><td>{{linha[5]|safe}}</td><td>{{linha[6]|safe}}</td>
         <td>{{linha[7]|safe}}</td>
         <td>{{linha[8]|safe}}</td>
         <td>{{linha[9]}}</td>
@@ -214,8 +259,12 @@ p.reprovado {
           {% if (linha[12]+linha[11])>=2 %}
             {% if linha[12]-linha[11]>0 %}
             <p class="aprovado">APROVADO</p>
-            {% else %}
+            {% endif %}
+            {% if linha[12]-linha[11]<0 %}
             <p class="reprovado">NÃO APROVADO</p>
+            {% endif %}
+            {% if linha[12]-linha[11]==0 %}
+            <p class="indefinido">INDEFINIDO</p>
             {% endif %}
           {% else %}
             <p class="indefinido">INDEFINIDO</p>
