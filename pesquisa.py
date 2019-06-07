@@ -244,12 +244,15 @@ def verify_password(username, password):
         conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
         conn.select_db('pesquisa')
         cursor  = conn.cursor()
-        consulta = """SELECT id FROM users WHERE username='""" + username + """' AND password=PASSWORD('""" + password + """')"""
+        consulta = """SELECT id,username,permission FROM users WHERE username='""" + username + """' AND password=PASSWORD('""" + password + """')"""
         cursor.execute(consulta)
         total = cursor.rowcount
         if (total==0):
             return (False)
         else:
+            linha = cursor.fetchone()
+            session['username'] = auth.username()
+            session['permissao'] = int(linha[2])
             return (True)
     except:
         e = sys.exc_info()[0]
@@ -268,7 +271,6 @@ FIM AUTENTICAÇÃO
 @app.route('/segredo')
 @auth.login_required
 def secret_page():
-    session['username'] = auth.username()
     return (session['username'])
 
 @app.route("/")
@@ -947,15 +949,17 @@ def distribuir_bolsas(demanda,dados):
         #Verificar se ainda tem bolsas disponíveis para redistribuir dentro das unidades
         continua = False
 
-def executarSelect(consulta):
+def executarSelect(consulta,tipo=0):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     try:
         cursor.execute(consulta)
         total = cursor.rowcount
-        resultado = cursor.fetchall()
-        conn.close()
+        if (tipo==0): #Retorna todas as linhas
+            resultado = cursor.fetchall()
+        else: #Retorna uma única linha
+            resultado = cursor.fetchone()
         return (resultado,total)
     except:
         e = sys.exc_info()[0]
@@ -1298,6 +1302,49 @@ def declaracaoEvento():
                 return(u"Nenhuma declaração encontrada.")
         else:
             return ("OK")
+
+## TODO: Método meusProjetos
+@app.route("/meusProjetos", methods=['GET', 'POST'])
+@auth.login_required
+def meusProjetos():
+    if ('username') in session:
+        #consulta = """SELECT id,nome_do_coordenador,orientador_lotacao,titulo_do_projeto,DATE_FORMAT(inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(termino,'%d/%m/%Y') as fim,GROUP_CONCAT(estudante_nome_completo SEPARATOR '<BR><BR>\n') as estudantes,token FROM cadastro_geral WHERE siape='""" + str(session['username']) + """' GROUP BY titulo_do_projeto ORDER BY inicio"""
+        consulta = """SELECT id,nome_do_coordenador,orientador_lotacao,titulo_do_projeto,DATE_FORMAT(inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(termino,'%d/%m/%Y') as fim,estudante_nome_completo,token FROM cadastro_geral WHERE siape='""" + str(session['username']) + """' ORDER BY inicio,titulo_do_projeto"""
+        projetos,total = executarSelect(consulta)
+        return(render_template('meusProjetos.html',projetos=projetos,total=total))
+    else:
+        return("Você não tem autorização para acessar esta página. Entre em contato com a Coordenadoria de Pesquisa da PRPI.")
+
+@app.route("/minhaDeclaracaoOrientador", methods=['GET', 'POST'])
+@auth.login_required
+def minhaDeclaracao():
+    if request.method == "GET":
+        #Recuperando o token da declaração
+        if 'token' in request.args:
+            token = str(request.args.get('token'))
+            consulta = """SELECT nome_do_coordenador,siape,titulo_do_projeto,DATE_FORMAT(estudante_inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(estudante_fim,'%d/%m/%Y') as fim,estudante_nome_completo,token,if(estudante_fim<NOW(),"exerceu","exerce") as verbo FROM cadastro_geral WHERE token='""" + token + """' ORDER BY inicio,titulo_do_projeto"""
+            projeto,total = executarSelect(consulta,1)
+            data_agora = getData()
+            if total==1:
+                arquivoDeclaracao = app.config['DECLARACOES_FOLDER'] + 'declaracao.pdf'
+                options = {
+                    'page-size': 'A4',
+                    'margin-top': '2cm',
+                    'margin-right': '2cm',
+                    'margin-bottom': '1cm',
+                    'margin-left': '2cm',
+                }
+                pdfkit.from_string(render_template('declaracao_orientador.html',texto=projeto,data=data_agora,identificador=token,raiz=ROOT_SITE),arquivoDeclaracao,options=options)
+                return send_from_directory(app.config['DECLARACOES_FOLDER'], 'declaracao.pdf')
+                #return send_file(arquivoDeclaracao, attachment_filename='arquivo.pdf')
+                #return(render_template('declaracao_orientador.html',texto=projeto,data=data_agora,identificador=token))
+            else:
+                return("declaração inexistente!")
+        else:
+            return("OK")
+    else:
+        return("OK")
+## TODO: Método indicarBolsista ()
 
 if __name__ == "__main__":
     app.run()
