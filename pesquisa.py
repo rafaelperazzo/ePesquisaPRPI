@@ -41,6 +41,7 @@ SITE = "https://yoko.pet/pesquisa/static/files/"
 IMAGENS_URL = "https://yoko.pet/pesquisa/static/"
 DECLARACOES_DIR = '/home/perazzo/pesquisa/pdfs/'
 ROOT_SITE = 'https://yoko.pet'
+USUARIO_SITE = ROOT_SITE + "/pesquisa/usuario"
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -1338,7 +1339,7 @@ def meusProjetos():
         ## TODO: Corrigir consulta para identificação da situação! Considerar quando a quantidade de avaliacoes é igual a 1
         consulta_outros = """SELECT editalProjeto.id,editais.nome,editalProjeto.nome,ua,titulo,DATE_FORMAT(inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(fim,'%d/%m/%Y') as fim,categoria,arquivo_projeto,
         (SELECT COUNT(recomendacao) FROM `avaliacoes` WHERE finalizado=1 AND recomendacao=1 AND idProjeto=editalProjeto.id) as aprovados,
-        (SELECT COUNT(recomendacao) FROM `avaliacoes` WHERE finalizado=1 AND recomendacao=0 AND idProjeto=editalProjeto.id) as reprovados,bolsas,bolsas_concedidas,categoria
+        (SELECT COUNT(recomendacao) FROM `avaliacoes` WHERE finalizado=1 AND recomendacao=0 AND idProjeto=editalProjeto.id) as reprovados,bolsas,bolsas_concedidas,categoria,editais.situacao
          FROM editalProjeto,editais WHERE valendo=1 AND editalProjeto.tipo=editais.id AND siape=""" + str(session['username'])
         projetos2019,total2019 = executarSelect(consulta_outros)
         return(render_template('meusProjetos.html',projetos=projetos,total=total,projetos2019=projetos2019,total2019=total2019))
@@ -1422,6 +1423,41 @@ def login():
             return(render_template('login.html',mensagem='Problemas com o usuario/senha.'))
     else:
         return(render_template('login.html',mensagem=''))
+
+@app.route("/esqueciMinhaSenha", methods=['GET', 'POST'])
+def esqueciMinhaSenha():
+    return(render_template('esqueciMinhaSenha.html'))
+
+@app.route("/enviarMinhaSenha", methods=['GET', 'POST'])
+def enviarMinhaSenha():
+    if request.method == "POST":
+        if ('email' in request.form):
+            email = unicode(request.form['email'])
+            #ENVIAR E-MAIL
+            consulta = """SELECT username,password FROM users WHERE email='""" + email + """' """
+            linhas,total = executarSelect(consulta,1)
+
+            if (total>0):
+                usuario = unicode(linhas[0])
+                senha = unicode(linhas[1])
+
+                logging.debug(senha)
+                logging.debug(usuario)
+                texto_mensagem = "Usuario: " + usuario + "\nSenha: " + senha + "\n" + USUARIO_SITE
+                msg = Message(subject = "Plataforma Yoko - Lembrete de senha",recipients=[email],body=texto_mensagem)
+                mail.send(msg)
+                return("Senha enviada para o e-mail: " + email)
+            else:
+                return("E-mail não cadastrado. Entre em contato com a Coordenadoria de Pesquisa para solucionar o problema.")
+        else:
+            return("OK")
+    else:
+        return("OK")
+
+@app.route("/logout", methods=['GET', 'POST'])
+def encerrarSessao():
+    logout()
+    return(render_template('login.html',mensagem=''))
 
 if __name__ == "__main__":
     app.run()

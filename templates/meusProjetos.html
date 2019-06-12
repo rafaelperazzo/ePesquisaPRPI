@@ -13,6 +13,21 @@
     p.reprovado {
       color: red;
     }
+
+    a.fixed {
+
+    position: fixed;
+
+    right: 0;
+
+    top: 0;
+
+    width: 260px;
+
+    border: 0px solid black;
+
+    }
+
 table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
@@ -21,7 +36,7 @@ table {
 
 td, th {
     border: 1px solid #dddddd;
-    text-align: left;
+    text-align: center;
     padding: 8px;
 }
 
@@ -47,7 +62,7 @@ tr:nth-child(even) {
     <td>{{ linha[4] }}</td>
     <td>{{ linha[5] }}</td>
     <td>{{ linha[6]|safe }}</td>
-    <td><pre><span class="cp"><a href="/pesquisa/minhaDeclaracaoOrientador?token={{ linha[7] }}">DECLARAÇÃO</a><br></span></pre></td>
+    <td><pre><span class="cp"><a href="/pesquisa/minhaDeclaracaoOrientador?token={{ linha[7] }}"><img src="{{ url_for('static', filename='pdf.png')}}" style="width:25%" alt="" align="center"></a><br></span></pre></td>
     </tr>
     <p><span class="cp">{% endfor %}</span></p>
 
@@ -57,12 +72,13 @@ tr:nth-child(even) {
     <h2>Projetos submetidos a editais a partir de 2019</h2>
     <table>
 
-      <th>Id</th><th>Edital</th><th>Orientador</th><th>Lotação</th><th>Titulo</th><th>Início</th><th>Fim
-      </th><th>Situação</th><th>Avaliações</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th>
+      <th>Id</th><th>Edital</th><th>Situação do Edital</th><th>Orientador</th><th>Lotação</th><th>Titulo</th><th>Início</th><th>Fim
+      </th><th>Situação do Projeto</th><th>Avaliações</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th>
       <p>{% for linha in projetos2019 %}</p>
       <tr>
         <td>{{linha[0]}}</td>
         <td>{{linha[1]}}</td>
+        <td>{{linha[14]}}</td>
         <td>{{linha[2]}}</td>
         <td>{{linha[3]}}</td>
         {% if linha[7]==1 %} <!--Projeto Novo -->
@@ -90,7 +106,7 @@ tr:nth-child(even) {
           {%endif %}
         </td>
         {% if linha[7]==1 %} <!--Projeto Novo -->
-          <td><a href="/pesquisa/meusPareceres?id={{linha[0]}}">Avaliações</a></td>
+          <td><a href="/pesquisa/meusPareceres?id={{linha[0]}}"><img src="{{ url_for('static', filename='avaliacao.png')}}" style="width:50%" alt="" align="center"></a></td>
         {%else %} <!--Projeto em andamento -->
           <td>-</td>
         {% endif %}
@@ -99,6 +115,6 @@ tr:nth-child(even) {
       </tr>
       {% endfor %}
     </table>
-
+    <a class="fixed" href="/pesquisa/logout">Sair</a>
   </body>
 </html>

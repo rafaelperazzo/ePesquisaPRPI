@@ -96,8 +96,17 @@ def cadastrarUsuarios(codigoEdital):
         valores = (unicode(linha[0]),unicode(linha[1]),unicode(linha[2]),senha)
         atualizar(inserir,valores)
 
+def cadastrarUsuariosAntigos():
+    consulta = """SELECT nome_do_coordenador,orientador_email,siape FROM cadastro_geral ORDER BY nome_do_coordenador"""
+    linhas,total = executarSelect(consulta)
+    for linha in linhas:
+        senha = id_generator(8)
+        inserir = """INSERT INTO users (nome,email,username,password) VALUES (%s,%s,%s,%s)"""
+        valores = (unicode(linha[0]),unicode(linha[1]),unicode(linha[2]),senha)
+        atualizar(inserir,valores)
+
 def atualizarSenhas(codigoEdital):
-    consulta = """SELECT siape FROM editalProjeto WHERE valendo=1 AND tipo=""" + codigoEdital + """ ORDER BY nome"""
+    consulta = """SELECT username FROM users ORDER BY nome"""
     linhas,total = executarSelect(consulta)
     for linha in linhas:
         senha = id_generator(8)
@@ -105,13 +114,12 @@ def atualizarSenhas(codigoEdital):
         valores = (senha,str(linha[0]))
         atualizar(update,valores)
 
-## TODO: Incluir usuários do cadastro_geral
-
 def main():
     verificarEmails(codigoEdital)
     #verificarProjetosEmAndamento(codigoEdital)
-    cadastrarUsuarios(codigoEdital)
-    atualizarSenhas(codigoEdital)
+    #cadastrarUsuarios(codigoEdital)
+    #atualizarSenhas(codigoEdital)
+    cadastrarUsuariosAntigos()
 
 if (len(sys.argv)==2):
     codigoEdital = str(sys.argv[1])
