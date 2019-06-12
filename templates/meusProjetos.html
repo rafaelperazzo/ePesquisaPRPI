@@ -28,6 +28,20 @@
 
     }
 
+    a.editalProjeto {
+
+    position: fixed;
+
+    right: 0;
+
+    top: 5;
+
+    width: 260px;
+
+    border: 0px solid black;
+
+    }
+
 table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
@@ -77,7 +91,11 @@ tr:nth-child(even) {
       <p>{% for linha in projetos2019 %}</p>
       <tr>
         <td>{{linha[0]}}</td>
-        <td>{{linha[1]}}</td>
+        {% if permissao==1 %}
+            <td>{{linha[1]}}</td>
+        {% else %}
+            <td><a href="/pesquisa/editalProjeto?edital={{linha[15]}}">{{linha[1]}}</a></td>
+        {% endif %}
         <td>{{linha[14]}}</td>
         <td>{{linha[2]}}</td>
         <td>{{linha[3]}}</td>
