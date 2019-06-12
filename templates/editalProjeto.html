@@ -61,6 +61,29 @@ p.reprovado {
 }
 
 </style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+<script>
+$(document).ready(function(){
+ $("#myInput").on("keyup", function() {
+   var value = $(this).val().toLowerCase();
+   $("#myTable tr").filter(function() {
+     $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+   });
+ });
+});
+</script>
+
+<script>
+$(document).ready(function(){
+ $("#txtNovos").on("keyup", function() {
+   var value = $(this).val().toLowerCase();
+   $("#tabelaNovos tr").filter(function() {
+     $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+   });
+ });
+});
+</script>
+
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     <title>Propostas submetidas a edital</title>
   </head>
@@ -72,12 +95,16 @@ p.reprovado {
     <hr>
     <h1><b>Resumo da Demanda</b></h1>
     <table>
-      <th>Unidade Academica</th><th>Número de propostas submetidas</th><th>Previsão de cota (UFCA)</th><th>Previsão de cota (CNPq)</th>
-      {% for linha in linhas_demanda %}
-      <tr>
-        <td align="center">{{linha[0]}}</td><td align="center">{{linha[1]}}</td><td align="center">({{ ((linha[1]/total)*bolsas_ufca)|round|int }})</td><td align="center">({{ ((linha[1]/total)*bolsas_cnpq)|round|int }})</td>
-      </tr>
-      {% endfor %}
+      <thead>
+          <th>Unidade Academica</th><th>Número de propostas submetidas</th><th>Previsão de cota (UFCA)</th><th>Previsão de cota (CNPq)</th>
+      </thead>
+      <tbody id="resumoDemanda">
+            {% for linha in linhas_demanda %}
+            <tr>
+              <td align="center">{{linha[0]}}</td><td align="center">{{linha[1]}}</td><td align="center">({{ ((linha[1]/total)*bolsas_ufca)|round|int }})</td><td align="center">({{ ((linha[1]/total)*bolsas_cnpq)|round|int }})</td>
+            </tr>
+            {% endfor %}
+       </tbody>
     </table>
     <b>Total: {{total}}</b>
 
@@ -162,9 +189,13 @@ p.reprovado {
     </div>
     <hr>
     <h1>Propostas ordenadas pelo ID</h1>
+    <input id="myInput" type="text" placeholder="Procurar.."><BR>
     <table>
-    <th>Id</th><th>Código do Edital</th><th>Categoria</th><th>Proponente</th><th>E-mail</th><th>UA</th><th>Prioridade</th><th>ScoreLattes</th><th>Título</th><th>Projeto</th><th>Plano1</th><th>Plano2</th><th>Lattes</th><th>Comprovantes</th><th>Data</th>
-    <th>Início</th><th>Fim</th>
+      <thead>
+        <th>Id</th><th>Código do Edital</th><th>Categoria</th><th>Proponente</th><th>E-mail</th><th>UA</th><th>Prioridade</th><th>ScoreLattes</th><th>Título</th><th>Projeto</th><th>Plano1</th><th>Plano2</th><th>Lattes</th><th>Comprovantes</th><th>Data</th>
+        <th>Início</th><th>Fim</th>
+      </thead>
+    <tbody id="myTable">
     {% for linha in listaProjetos %}
     <tr>
     <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td>
@@ -211,16 +242,19 @@ p.reprovado {
     <td>{{ linha[15] }}</td>
     </tr>
     {% endfor %}
-
+    </tbody>
     </table>
     Total: {{total}} propostas submetidas.
 
     <hr>
     <h1>PROJETOS NOVOS (em avaliação)</h1>
-
+    <input id="txtNovos" type="text" placeholder="Procurar.."><br>
     <table>
+      <thead>
       <th>Finalizadas as Avaliações ?</th><th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Palavras-Chave</th><th>Qtde de avaliações finalizadas</th><th>Inserir Consultor<th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
       <th>Aprovados</th><th>NÃO Aprovados</th><th>Indefinidos</th><th>Situação</th>
+    </thead>
+    <tbody id="tabelaNovos">
       {% for linha in novos %}
       <tr>
         <td>
@@ -273,6 +307,7 @@ p.reprovado {
         </td>
       </tr>
       {% endfor %}
+      </tbody>
     </table>
     Total: {{total_novos}} projetos novos submetidos.
   </body>

@@ -2,6 +2,17 @@
 <html>
   <head>
 	  <style>
+    p.aprovado {
+      color: green;
+    }
+
+    p.indefinido {
+      color: orange;
+    }
+
+    p.reprovado {
+      color: red;
+    }
 table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
@@ -23,7 +34,7 @@ tr:nth-child(even) {
   </head>
   <body>
     <h1><b>Meus Projetos</b></h1>
-    *Caso seu projeto não esteja listado abaixo ou esteja listado em duplicidade, favor entrar em contato com a Coordenadoria de Pesquisa/PRPI.
+    *Caso seu projeto não esteja listado abaixo, favor entrar em contato com a Coordenadoria de Pesquisa/PRPI.
     <table>
     <th>Id</th><th>Orientador</th><th>Lotação</th><th>Titulo</th><th>Início</th><th>Fim</th><th>Discentes</th><th>Declaração</th>
     <p>{% for linha in projetos %}</p>
@@ -40,6 +51,53 @@ tr:nth-child(even) {
     </tr>
     <p><span class="cp">{% endfor %}</span></p>
 
+    </table>
+
+    <hr>
+    <h2>Projetos submetidos a editais a partir de 2019</h2>
+    <table>
+
+      <th>Id</th><th>Edital</th><th>Orientador</th><th>Lotação</th><th>Titulo</th><th>Início</th><th>Fim
+      </th><th>Situação</th><th>Avaliações</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th>
+      <p>{% for linha in projetos2019 %}</p>
+      <tr>
+        <td>{{linha[0]}}</td>
+        <td>{{linha[1]}}</td>
+        <td>{{linha[2]}}</td>
+        <td>{{linha[3]}}</td>
+        {% if linha[7]==1 %} <!--Projeto Novo -->
+          <td><a href="/pesquisa/static/files/{{linha[8]}}">{{linha[4]}}</a></td>
+        {%else %} <!--Projeto em andamento -->
+            <td>{{linha[4]}}</td>
+        {% endif %}
+        <td>{{linha[5]}}</td>
+        <td>{{linha[6]}}</td>
+        <td>
+          {% if linha[13]==1 %}
+              {% if linha[9]+linha[10]>1 %}
+                    {% if linha[9]-linha[10]>0 %}
+                        <p class="aprovado">APROVADO</p>
+                    {% elif linha[10]-linha[9]>0 %}
+                        <p class="reprovado">NÃO APROVADO</p>
+                    {% else %}
+                        <p class="indefinido">INDEFINIDO</p>
+                    {% endif %}
+              {% else %}
+                    INDEFINIDO
+              {% endif %}
+          {%else %}
+          <p class="aprovado">APROVADO</p>
+          {%endif %}
+        </td>
+        {% if linha[7]==1 %} <!--Projeto Novo -->
+          <td><a href="/pesquisa/meusPareceres?id={{linha[0]}}">Avaliações</a></td>
+        {%else %} <!--Projeto em andamento -->
+          <td>-</td>
+        {% endif %}
+        <td>{{linha[11]}}</td>
+        <td>{{linha[12]}}</td>
+      </tr>
+      {% endfor %}
     </table>
 
   </body>
