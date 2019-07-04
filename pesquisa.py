@@ -31,6 +31,8 @@ import pdfkit
 from functools import wraps
 from flask_mail import Mail
 from flask_mail import Message
+from flask_uploads import *
+
 
 UPLOAD_FOLDER = '/home/perazzo/pesquisa/static/files'
 ALLOWED_EXTENSIONS = set(['pdf','xml'])
@@ -42,6 +44,7 @@ IMAGENS_URL = "https://yoko.pet/pesquisa/static/"
 DECLARACOES_DIR = '/home/perazzo/pesquisa/pdfs/'
 ROOT_SITE = 'https://yoko.pet'
 USUARIO_SITE = ROOT_SITE + "/pesquisa/usuario"
+ATTACHMENTS_DIR = '/home/perazzo/pesquisa/docs_indicacoes/'
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -56,6 +59,7 @@ app.config['MAIL_DEFAULT_SENDER'] = 'pesquisa.prpi@ufca.edu.br'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['CURRICULOS_FOLDER'] = CURRICULOS_DIR
 app.config['DECLARACOES_FOLDER'] = DECLARACOES_DIR
+app.config['TEMP_FOLDER'] = DECLARACOES_DIR
 
 ## TODO: Preparar o log geral
 logging.basicConfig(filename=WORKING_DIR + 'app.log', filemode='w', format='%(asctime)s %(name)s - %(levelname)s - %(message)s',level=logging.DEBUG)
@@ -68,6 +72,14 @@ SESSION_SECRET_KEY = lines[2]
 app.config['SECRET_KEY'] = SESSION_SECRET_KEY
 app.config['MAIL_PASSWORD'] = GMAIL_PASSWORD
 mail = Mail(app)
+
+
+#Flask-flask_uploads
+app.config['UPLOADED_DOCUMENTS_DEST'] = ATTACHMENTS_DIR
+app.config['UPLOADS_DEFAULT_DEST'] = ATTACHMENTS_DIR
+anexos = UploadSet('documents',ALL)
+configure_uploads(app, anexos)
+patch_request_class(app)
 
 def removerAspas(texto):
     resultado = texto.replace('"',' ')
@@ -116,6 +128,23 @@ def atualizar(consulta):
     cursor  = conn.cursor()
     try:
         cursor.execute(consulta)
+        conn.commit()
+    except MySQLdb.Error, e:
+        #e = sys.exc_info()[0]
+        logging.debug(e)
+	logging.debug(consulta)
+        #conn.rollback()
+    finally:
+        cursor.close()
+        conn.close()
+
+def inserir(consulta,valores):
+    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+    conn.autocommit(True)
+    conn.select_db('pesquisa')
+    cursor  = conn.cursor()
+    try:
+        cursor.execute(consulta,valores)
         conn.commit()
     except MySQLdb.Error, e:
         #e = sys.exc_info()[0]
@@ -198,17 +227,24 @@ def gerarDeclaracaoOrientador(identificador):
     return (linha,frase_bolsistas)
 
 
-def gerarProjetosPorAluno(nome):
-    #CONEXÃO COM BD
-    conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
-    conn.select_db('pesquisa')
-    cursor  = conn.cursor()
-    consulta = "SELECT nome,cpf,modalidade,orientador,projeto,inicio,fim,id FROM alunos WHERE nome LIKE " + "\"%" + unicode(nome) + "%\" AND cpf!=\"\" AND projeto!=\"\""
-    cursor.execute(consulta)
-    linhas = cursor.fetchall()
+def gerarProjetosPorAluno(cpf):
+    try:
+        conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
+        conn.select_db('pesquisa')
+        cursor  = conn.cursor()
+        consulta = """SELECT estudante_nome_completo,cpf,estudante_modalidade,nome_do_coordenador,titulo_do_projeto,estudante_inicio,estudante_fim,token FROM cadastro_geral WHERE cpf = '""" + cpf + """'"""
+        cursor.execute(consulta)
+        linhas = cursor.fetchall()
+        return (linhas)
+    except:
+        e = sys.exc_info()[0]
+        logging.error(e)
+        logging.error("ERRO Na função gerarProjetosPorAluno. Ver consulta abaixo.")
+        logging.error(consulta)
+    finally:
+        cursor.close()
+        conn.close()
 
-    conn.close()
-    return (linhas)
 
 def gerarProjetosPorOrientador(identificador):
     #CONEXÃO COM BD
@@ -881,7 +917,6 @@ def quantidades(consulta):
 
 ## TODO: Finalizar as estatisticas - Projetos aprovados devem ser vir da tabela editalProjeto
 @app.route("/estatisticas", methods=['GET', 'POST'])
-@auth.login_required
 def estatisticas():
     if request.method == "GET":
         codigoEdital = str(request.args.get('edital'))
@@ -1167,6 +1202,24 @@ def gerarGraficos(demandas,grafico1,grafico2,rotacao=0):
     plt.savefig(PLOTS_DIR + grafico2, bbox_inches = "tight")
     plt.close('all')
 
+def gerarPDF(template):
+    logging.debug(type(template))
+    try:
+        arquivoDeclaracao = app.config['TEMP_FOLDER'] + 'resultados.pdf'
+        options = {
+            'page-size': 'A4',
+            'margin-top': '2cm',
+            'margin-right': '2cm',
+            'margin-bottom': '1cm',
+            'margin-left': '2cm',
+        }
+        pdfkit.from_string(template,arquivoDeclaracao,options=options)
+    except:
+        e = sys.exc_info()[0]
+        logging.error(e)
+        logging.error("ERRO Na função gerarPDF")
+    #return send_from_directory(app.config['TEMP_FOLDER'], 'resultados.pdf')
+
 @app.route("/editalProjeto", methods=['GET', 'POST'])
 def editalProjeto():
     #SELECT editalProjeto.id,editalProjeto.nome,GROUP_CONCAT(avaliacoes.avaliador,"(",avaliacoes.finalizado,")") as avaliadores FROM editalProjeto,avaliacoes WHERE tipo=3 and categoria=1 and valendo=1 and editalProjeto.id=avaliacoes.idProjeto GROUP BY editalProjeto.id
@@ -1192,9 +1245,9 @@ def editalProjeto():
                 tipo_classificacao = int(obterColunaUnica("editais","classificacao","id",codigoEdital))
                 #ORDENA DE ACORDO COM O TIPO DE CLASSIFICAÇÃO: 1 - POR UA; 2 - POR LATTES
                 if (tipo_classificacao==1):
-                    consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim,if(produtividade=0,\"PROD. CNPq\",if(produtividade=1,\"BPI FUNCAP\",\"NORMAL\")) as prioridade FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY ua,produtividade,scorelattes DESC"
+                    consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim,if(produtividade=0,\"PROD. CNPq\",if(produtividade=1,\"BPI FUNCAP\",\"NORMAL\")) as prioridade,bolsas,bolsas_concedidas,obs FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY ua,produtividade,scorelattes DESC"
                 else:
-                    consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim,if(produtividade=0,\"PROD. CNPq\",if(produtividade=1,\"BPI FUNCAP\",\"NORMAL\")) as prioridade FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY produtividade,scorelattes DESC"
+                    consulta = "SELECT id,tipo,categoria,nome,email,ua,scorelattes,titulo,arquivo_projeto,arquivo_plano1,arquivo_plano2,arquivo_lattes_pdf,arquivo_comprovantes,DATE_FORMAT(data,\"%d/%m/%Y - %H:%i\") as data,DATE_FORMAT(inicio,\"%d/%m/%Y\") as inicio,DATE_FORMAT(fim,\"%d/%m/%Y\") as fim,if(produtividade=0,\"PROD. CNPq\",if(produtividade=1,\"BPI FUNCAP\",\"NORMAL\")) as prioridade,bolsas,bolsas_concedidas,obs FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY produtividade,scorelattes DESC"
                 consulta_novos = """SELECT editalProjeto.id,nome,ua,titulo,arquivo_projeto,
                 GROUP_CONCAT(avaliacoes.avaliador ORDER BY avaliador SEPARATOR '<BR>') as avaliadores,GROUP_CONCAT(avaliacoes.recomendacao ORDER BY avaliador SEPARATOR '<BR>') as recomendacoes,GROUP_CONCAT(avaliacoes.enviado ORDER BY avaliador SEPARATOR '<BR>') as enviado,GROUP_CONCAT(avaliacoes.aceitou ORDER BY avaliador SEPARATOR '<BR>') as aceitou,
                 sum(avaliacoes.finalizado) as finalizados,sum(if(recomendacao=-1,1,0)), sum(if(recomendacao=0,1,0)),sum(if(recomendacao=1,1,0)),palavras"""
@@ -1244,16 +1297,28 @@ def editalProjeto():
                     linhasTempoAvaliacao = cursor.fetchall()
                     cursor.execute(oferta_demanda)
                     linhas_oferta_demanda = cursor.fetchall()
-                    gerarGraficos(linhas_demanda,"grafico-demanda.png","grafico-demanda-2.png")
-                    gerarGraficos(linhas_oferta_demanda,"grafico-oferta-demanda.png","grafico-oferta-demanda-2.png")
-                    gerarGraficos(linhas_demanda_bolsas,"grafico-demanda-bolsas-1.png","grafico-demanda-bolsas-2.png")
-                    gerarGraficos(dadosProjetosNovos,"grafico-novos1.png","grafico-novos2.png")
-                    gerarGraficos(linhasRespostasAvaliadores,"grafico-avaliadores1.png","grafico-avaliadores2.png")
-                    gerarGraficos(linhasAvaliacoes,"grafico-avaliacoes1.png","grafico-avaliacoes2.png")
-                    gerarGraficos(linhasScoreLattes,"grafico-score1.png","grafico-score2.png")
-                    gerarGraficos(linhasScoreLattesArea,"grafico-scoreArea1.png","grafico-scoreArea2.png",90)
-                    gerarGraficos(linhasTempoAvaliacao,"grafico-tempoAvaliacao1.png","grafico-tempoAvaliacao2.png")
-                    return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq,codigoEdital=codigoEdital))
+                    if 'resultado' not in request.args:
+                        gerarGraficos(linhas_demanda,"grafico-demanda.png","grafico-demanda-2.png")
+                        gerarGraficos(linhas_oferta_demanda,"grafico-oferta-demanda.png","grafico-oferta-demanda-2.png")
+                        gerarGraficos(linhas_demanda_bolsas,"grafico-demanda-bolsas-1.png","grafico-demanda-bolsas-2.png")
+                        gerarGraficos(dadosProjetosNovos,"grafico-novos1.png","grafico-novos2.png")
+                        gerarGraficos(linhasRespostasAvaliadores,"grafico-avaliadores1.png","grafico-avaliadores2.png")
+                        gerarGraficos(linhasAvaliacoes,"grafico-avaliacoes1.png","grafico-avaliacoes2.png")
+                        gerarGraficos(linhasScoreLattes,"grafico-score1.png","grafico-score2.png")
+                        gerarGraficos(linhasScoreLattesArea,"grafico-scoreArea1.png","grafico-scoreArea2.png",90)
+                        gerarGraficos(linhasTempoAvaliacao,"grafico-tempoAvaliacao1.png","grafico-tempoAvaliacao2.png")
+                    if 'resultado' in request.args:
+                        if 'pdf' in request.args:
+                            mensagem = unicode(obterColunaUnica("editais","mensagem","id",codigoEdital))
+                            gerarPDF(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq,codigoEdital=codigoEdital,resultado=1,mensagem=mensagem))
+                            return(send_from_directory(app.config['TEMP_FOLDER'], 'resultados.pdf'))
+
+                        else:
+                            mensagem = unicode(obterColunaUnica("editais","mensagem","id",codigoEdital))
+                            return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq,codigoEdital=codigoEdital,resultado=1,mensagem=mensagem))
+                    else:
+                        mensagem = ""
+                        return(render_template('editalProjeto.html',listaProjetos=linhas,descricao=descricao,total=total,novos=linhas_novos,total_novos=total_novos,linhas_demanda=linhas_demanda,bolsas_ufca=bolsas_ufca,bolsas_cnpq=bolsas_cnpq,codigoEdital=codigoEdital,resultado=0))
                 except:
                     e = sys.exc_info()[0]
                     logging.error(e)
@@ -1333,14 +1398,19 @@ def declaracaoEvento():
 @app.route("/meusProjetos", methods=['GET', 'POST'])
 def meusProjetos():
     if autenticado():
+        gravando = "INSERT INTO acessos (username) VALUES ('" + str(session['username']) + "')"
+        atualizar(gravando)
+        ## TODO: CORRIGIR LISTA DE ORIENTANDO. TEM Q USAR GROUP CONCAT
         #consulta = """SELECT id,nome_do_coordenador,orientador_lotacao,titulo_do_projeto,DATE_FORMAT(inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(termino,'%d/%m/%Y') as fim,GROUP_CONCAT(estudante_nome_completo SEPARATOR '<BR><BR>\n') as estudantes,token FROM cadastro_geral WHERE siape='""" + str(session['username']) + """' GROUP BY titulo_do_projeto ORDER BY inicio"""
         consulta = """SELECT id,nome_do_coordenador,orientador_lotacao,titulo_do_projeto,DATE_FORMAT(inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(termino,'%d/%m/%Y') as fim,estudante_nome_completo,token FROM cadastro_geral WHERE siape='""" + str(session['username']) + """' ORDER BY inicio,titulo_do_projeto"""
         projetos,total = executarSelect(consulta)
         consulta_outros = """SELECT editalProjeto.id,editais.nome,editalProjeto.nome,ua,titulo,DATE_FORMAT(inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(fim,'%d/%m/%Y') as fim,categoria,arquivo_projeto,
         (SELECT COUNT(recomendacao) FROM `avaliacoes` WHERE finalizado=1 AND recomendacao=1 AND idProjeto=editalProjeto.id) as aprovados,
-        (SELECT COUNT(recomendacao) FROM `avaliacoes` WHERE finalizado=1 AND recomendacao=0 AND idProjeto=editalProjeto.id) as reprovados,bolsas,bolsas_concedidas,categoria,editais.situacao,editais.id
+        (SELECT COUNT(recomendacao) FROM `avaliacoes` WHERE finalizado=1 AND recomendacao=0 AND idProjeto=editalProjeto.id) as reprovados,bolsas,bolsas_concedidas,categoria,editais.situacao,editais.id,
+        (SELECT GROUP_CONCAT(nome ORDER BY nome SEPARATOR '<BR>') FROM indicacoes WHERE idProjeto=editalProjeto.id GROUP BY idProjeto) as orientandos
          FROM editalProjeto,editais WHERE valendo=1 AND editalProjeto.tipo=editais.id AND siape=""" + str(session['username']) + """ ORDER BY editalProjeto.data """
         projetos2019,total2019 = executarSelect(consulta_outros)
+        consulta_indicacoes = """SELECT  """
         return(render_template('meusProjetos.html',projetos=projetos,total=total,projetos2019=projetos2019,total2019=total2019,permissao=session['permissao']))
     else:
         return(render_template('login.html',mensagem=u"É necessário autenticação para acessar a página solicitada"))
@@ -1377,8 +1447,36 @@ def minhaDeclaracao():
     else:
         return(render_template('login.html',mensagem=u"É necessário autenticação para acessar a página solicitada"))
 
+@app.route("/discente/minhaDeclaracao", methods=['GET', 'POST'])
+def minhaDeclaracaoDiscente():
+        if request.method == "GET":
+            #Recuperando o token da declaração
+            if 'token' in request.args:
+                token = str(request.args.get('token'))
+                consulta = """SELECT estudante_nome_completo,cpf,if(estudante_fim>NOW(),1,0) as verbo,estudante_modalidade,nome_do_coordenador,titulo_do_projeto,
+                            ch_semanal,DATE_FORMAT(estudante_inicio,'%d/%m/%Y') as inicio,DATE_FORMAT(estudante_fim,'%d/%m/%Y') as final FROM cadastro_geral WHERE token='""" + token + """'"""
+                projeto,total = executarSelect(consulta,1)
+                data_agora = getData()
+                if total==1:
+                    arquivoDeclaracao = app.config['DECLARACOES_FOLDER'] + 'declaracao.pdf'
+                    options = {
+                        'page-size': 'A4',
+                        'margin-top': '2cm',
+                        'margin-right': '2cm',
+                        'margin-bottom': '1cm',
+                        'margin-left': '2cm',
+                    }
+                    pdfkit.from_string(render_template('declaracao_discente.html',texto=projeto,data=data_agora,identificador=token,raiz=ROOT_SITE),arquivoDeclaracao,options=options)
+                    return send_from_directory(app.config['DECLARACOES_FOLDER'], 'declaracao.pdf')
+                    #return send_file(arquivoDeclaracao, attachment_filename='arquivo.pdf')
+                    #return(render_template('declaracao_orientador.html',texto=projeto,data=data_agora,identificador=token))
+                else:
+                    return("declaração inexistente!")
+            else:
+                return("OK")
+        else:
+            return("OK")
 
-## TODO: Método indicarBolsista ()
 
 @app.route("/meusPareceres", methods=['GET', 'POST'])
 def meusPareceres():
@@ -1388,7 +1486,10 @@ def meusPareceres():
             idProjeto = str(request.args.get('id'))
             if autenticado():
                 tituloProjeto = unicode(obterColunaUnica("editalProjeto","titulo","id",idProjeto))
-                consulta = """SELECT avaliacoes.id,c1,c2,c3,c4,c5,c6,c7,(c1+c2+c3+c4+c5+c6+c7) as pontuacaoTotal, comentario, if(recomendacao=1,'RECOMENDADO','NÃO RECOMENDADO') as recomendacao, cepa,DATE_FORMAT(data_avaliacao,'%d/%m/%Y') FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND finalizado=1 AND idProjeto=""" + idProjeto + """ AND siape=""" + str(session['username']) + """ ORDER BY data_avaliacao"""
+                if ('todos' in request.args) and (session['permissao']==0):
+                    consulta = """SELECT avaliacoes.id,c1,c2,c3,c4,c5,c6,c7,(c1+c2+c3+c4+c5+c6+c7) as pontuacaoTotal, comentario, if(recomendacao=1,'RECOMENDADO','NÃO RECOMENDADO') as recomendacao, cepa,DATE_FORMAT(data_avaliacao,'%d/%m/%Y') FROM avaliacoes WHERE finalizado=1 AND idProjeto=""" + idProjeto + """ ORDER BY data_avaliacao"""
+                else:
+                    consulta = """SELECT avaliacoes.id,c1,c2,c3,c4,c5,c6,c7,(c1+c2+c3+c4+c5+c6+c7) as pontuacaoTotal, comentario, if(recomendacao=1,'RECOMENDADO','NÃO RECOMENDADO') as recomendacao, cepa,DATE_FORMAT(data_avaliacao,'%d/%m/%Y') FROM avaliacoes,editalProjeto WHERE editalProjeto.id=avaliacoes.idProjeto AND finalizado=1 AND idProjeto=""" + idProjeto + """ AND siape=""" + str(session['username']) + """ ORDER BY data_avaliacao"""
                 pareceres,total = executarSelect(consulta)
                 return(render_template('meusPareceres.html',linhas=pareceres,total=total,titulo=tituloProjeto))
             else:
@@ -1445,9 +1546,9 @@ def enviarMinhaSenha():
                 texto_mensagem = "Usuario: " + usuario + "\nSenha: " + senha + "\n" + USUARIO_SITE
                 msg = Message(subject = "Plataforma Yoko - Lembrete de senha",recipients=[email],body=texto_mensagem)
                 mail.send(msg)
-                return("Senha enviada para o e-mail: " + email)
+                return(render_template('login.html',mensagem='Senha enviada para o email: ' + email))
             else:
-                return("E-mail não cadastrado. Entre em contato com a Coordenadoria de Pesquisa para solucionar o problema.")
+                return(render_template('login.html',mensagem=u'E-mail não cadastrado. Envie e-mail para atendimento.prpi@ufca.edu.br para solicitar sua senha.'))
         else:
             return("OK")
     else:
@@ -1457,6 +1558,351 @@ def enviarMinhaSenha():
 def encerrarSessao():
     logout()
     return(render_template('login.html',mensagem=''))
+
+def projetoAprovado(idProjeto):
+
+    categoria = int(obterColunaUnica("editalProjeto","categoria","id",str(idProjeto)))
+
+    if categoria==0:
+        return (True)
+    else:
+        consulta = """SELECT sum(if(recomendacao=0,1,0)) as rejeitados, sum(if(recomendacao=1,1,0)) as aprovados FROM avaliacoes WHERE idProjeto=""" + str(idProjeto)
+        resultado,total = executarSelect(consulta,1)
+        avaliacoes = int(resultado[0]) + int(resultado[1])
+        if avaliacoes>1:
+            if (resultado[1]>resultado[0]):
+                return (True)
+            else:
+                return (False)
+        else:
+            return(False)
+
+@app.route("/prepararResultados", methods=['GET', 'POST'])
+def prepararResultados():
+    if request.method == "GET":
+        #Recuperando o código do edital
+        if 'edital' in request.args:
+            codigoEdital = str(request.args.get('edital'))
+            if ((autenticado()) and (session['permissao']==0)):
+                #ZERANDO as concessões
+                consulta = "UPDATE editalProjeto SET bolsas_concedidas=0 WHERE tipo=" + codigoEdital
+                atualizar(consulta)
+
+                consulta = """UPDATE editalProjeto SET obs='' WHERE tipo=""" + codigoEdital
+                atualizar(consulta)
+
+                #Gerando projetos do edital
+                tipo_classificacao = int(obterColunaUnica("editais","classificacao","id",codigoEdital))
+                if (tipo_classificacao==1):
+                    consulta = "SELECT id,tipo,categoria,ua,bolsas,bolsas_concedidas,siape,modalidade FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY ua, produtividade,scorelattes DESC"
+                else:
+                    consulta = "SELECT id,tipo,categoria,ua,bolsas,bolsas_concedidas,siape,modalidade FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY produtividade,scorelattes DESC"
+                projetos,total = executarSelect(consulta)
+                total = float(total)
+                #Recuperando demanda por unidade academica
+                demanda = """SELECT ua,count(id) FROM editalProjeto WHERE valendo=1 and tipo=""" + codigoEdital + """ GROUP BY ua ORDER BY ua"""
+                demandaQualificada,totalDemanda = executarSelect(demanda)
+
+                #Recuperando quantitativo de bolsas do edital
+                bolsas_ufca = int(obterColunaUnica("editais","quantidade_bolsas","id",codigoEdital))
+                bolsas_cnpq = int(obterColunaUnica("editais","quantidade_bolsas_cnpq","id",codigoEdital))
+                #Montando os dados
+                cnpqUnidade = {}
+                ufcaUnidade = {}
+                for linha in demandaQualificada:
+                    ua = unicode(linha[0])
+                    totalDeProjetosDaUnidade = int(linha[1])
+                    bolsasCnpqParaUnidade = round((totalDeProjetosDaUnidade/total)*bolsas_cnpq)
+                    bolsasUFCAParaUnidade = round((totalDeProjetosDaUnidade/total)*bolsas_ufca)
+                    cnpqUnidade[ua] = bolsasCnpqParaUnidade
+                    ufcaUnidade[ua] = bolsasUFCAParaUnidade
+                #Distribuindo bolsas
+                continua = True
+                while(continua):
+                    consulta = "SELECT id,tipo,categoria,ua,bolsas,bolsas_concedidas,siape,modalidade FROM editalProjeto WHERE tipo=" + codigoEdital + " AND valendo=1 ORDER BY ua, produtividade,scorelattes DESC"
+                    projetos,total = executarSelect(consulta)
+                    for projeto in projetos:
+                        ua = str(projeto[3]) #Unidade Academica
+                        idProjeto = int(projeto[0]) #ID do projeto
+                        solicitadas = int(projeto[4]) #Quantidade de bolsas solicitadas
+                        concedidas = int(projeto[5]) #Quantidade de bolsas concedidas
+                        siape = str((projeto[6]))  #Siape
+                        codigoEdital = str(projeto[1]) #Codigo do Edital
+                        categoria = int(projeto[2]) #Projeto novo(1) ou em andamento (0)
+                        modalidade = int(projeto[7]) #PIBIC, PIBITI, PIBIC-EM
+
+                        if (cnpqUnidade[ua]>0): #Se a unidade ainda possui bolsas disponíveis
+                            if (solicitadas-concedidas)>0: #Se ainda existe demanda a ser atendida
+                                if(not cotaEstourada(codigoEdital,siape)): #Se o orientador não estiver com a cota individual estourada
+                                    if projetoAprovado(idProjeto): #Se o projeto estiver aprovado
+                                        consulta = "UPDATE editalProjeto SET bolsas_concedidas=bolsas_concedidas+1 WHERE id=" + str(idProjeto)
+                                        atualizar(consulta)
+                                        cnpqUnidade[ua] = cnpqUnidade[ua] - 1
+                                        consulta = """UPDATE editalProjeto SET obs=CONCAT(obs,'<BR><BR>','BOLSA CNPq CONCEDIDA') WHERE id=""" + str(idProjeto)
+                                        atualizar(consulta)
+                                    else: #Se o projeto não estiver aprovado
+                                        consulta = "UPDATE editalProjeto SET obs=\"PROJETO NÃO FOI APROVADO.\" WHERE id=" + str(idProjeto)
+                                        atualizar(consulta)
+                                else: #Se o orientador estiver com a cota estourada
+                                    consulta = """UPDATE editalProjeto SET obs=CONCAT(obs,'<BR>','BOLSA NÃO CONCEDIDA. ORIENTADOR NÃO PODE ULTRASSAR A COTA DE 2 BOLSISTAS POR MODALIDADE (Anexo XIV da Res. 01/2014/CONSUP, Art. 7 Inciso I)') WHERE id=""" + str(idProjeto)
+                                    #atualizar(consulta)
+                        elif (ufcaUnidade[ua]>0): #Bolsas UFCA
+                            if (solicitadas-concedidas)>0: #Se ainda existe demanda a ser atendida
+                                if(not cotaEstourada(codigoEdital,siape)): #Se o orientador não estiver com a cota individual estourada
+                                    if projetoAprovado(idProjeto): #Se o projeto estiver aprovado
+                                        consulta = "UPDATE editalProjeto SET bolsas_concedidas=bolsas_concedidas+1 WHERE id=" + str(idProjeto)
+                                        atualizar(consulta)
+                                        ufcaUnidade[ua] = ufcaUnidade[ua] - 1
+                                        consulta = """UPDATE editalProjeto SET obs=CONCAT(obs,'<BR><BR>','BOLSA UFCA CONCEDIDA') WHERE id=""" + str(idProjeto)
+                                        atualizar(consulta)
+                                else: #Se o orientador estiver com a cota estourada
+                                    consulta = """UPDATE editalProjeto SET obs=CONCAT(obs,'<BR>','BOLSA NÃO CONCEDIDA. ORIENTADOR NÃO PODE ULTRASSAR A COTA DE 2 BOLSISTAS POR MODALIDADE (Anexo XIV da Res. 01/2014/CONSUP, Art. 7 Inciso I)') WHERE id=""" + str(idProjeto)
+                                    #atualizar(consulta)
+
+                        else: # se a unidade não tem mais bolsas disponíveis em sua cota
+                            consulta = "UPDATE editalProjeto SET obs=CONCAT(obs,'<BR>','BOLSA NÃO CONCEDIDA. COTA DA UNIDADE ZERADA (Anexo XIV da Res. 01/2014/CONSUP, Art. 7 Inciso II)') WHERE id=" + str(idProjeto)
+                            #atualizar(consulta)
+                    if (sum(ufcaUnidade.values())>0) or (sum(cnpqUnidade.values())>0):
+                        continua = True
+                    else:
+                        continua = False
+
+                return("Resultados preparados com sucesso!")
+            else:
+                return("Voce nao tem permissao para acessar este recurso.")
+        else:
+            return("OK")
+    else:
+        return("OK")
+
+def tuplaDeEditais(ano):
+    inicio = ano + "-04-01"
+    fim = ano + "-12-31"
+    consulta = """SELECT id FROM editais WHERE DATE(deadline)>'""" + inicio + """' AND DATE(deadline)<'""" + fim + """' AND nome not like '%contínuo%'"""
+    editais,total = executarSelect(consulta)
+    codigos = []
+    for linha in editais:
+        codigos.append(int(linha[0]))
+    if total>0:
+        resultado = str(tuple(codigos))
+        return (resultado)
+    else:
+        return (0)
+
+
+@app.route("/cruzarDados", methods=['GET', 'POST'])
+def cruzarDados():
+    if request.method == "GET":
+        #Recuperando o ano dos editais
+        if 'ano' in request.args:
+            ano = str(request.args.get('ano'))
+            if ((autenticado()) and (session['permissao']==0)):
+                editais = tuplaDeEditais(ano)
+                if (editais!=0):
+                    consulta = """SELECT siape,editalProjeto.nome,sum(bolsas_concedidas),GROUP_CONCAT(editais.nome ORDER BY tipo SEPARATOR '<BR>') as editais, GROUP_CONCAT(modalidades.descricao ORDER BY tipo SEPARATOR '<BR>') as tipos FROM editalProjeto,modalidades,editais WHERE modalidades.id=editalProjeto.modalidade AND editalProjeto.tipo=editais.id AND valendo=1 and tipo in """ + editais + """ AND modalidade in (1,2,3) GROUP BY siape ORDER BY nome"""
+                    linhas,total = executarSelect(consulta)
+                    return(render_template('bolsasPorAno.html',linhas=linhas,ano=ano,total=total))
+                else:
+                    return("Sem dados disponíveis!")
+            else:
+                return("Acesso negado!")
+        else:
+            return("OK")
+    else:
+        return("OK")
+
+def idSiape(id,siape):
+    siapeObtido = obterColunaUnica('editalProjeto','siape','id',id)
+    if siape=="0":
+        return (False)
+    else:
+        if (siapeObtido==siape):
+            return(True)
+        else:
+            return(False)
+
+'''
+Verifica quantos voluntários já foram indicados para o id do projeto
+'''
+def quantosVoluntariosIndicados(id):
+    consulta = """SELECT count(id) FROM indicacoes WHERE tipo_de_vaga=0 AND idProjeto=""" + id
+    linhas,total = executarSelect(consulta,1)
+    numero = int(linhas[0])
+    return (numero)
+
+'''
+Verifica se um projeto pode indicar voluntários
+'''
+def podeIndicarVoluntarios(id):
+    bolsas_obtidas = int(obterColunaUnica('editalProjeto','bolsas_concedidas','id',id))
+    bolsas_solicitadas = int(obterColunaUnica('editalProjeto','bolsas','id',id))
+    bolsistasIndicados = quantosBolsistasIndicados(id)
+    voluntariosIndicados = quantosVoluntariosIndicados(id)
+    totalDeVoluntarios = bolsas_solicitadas-bolsas_obtidas
+    if (voluntariosIndicados<totalDeVoluntarios):
+        return (True)
+    else:
+        return (False)
+
+'''
+Verifica quantos bolsistas já foram indicados para o id do projeto
+'''
+def quantosBolsistasIndicados(id):
+    consulta = """SELECT count(id) FROM indicacoes WHERE tipo_de_vaga=1 AND idProjeto=""" + id
+    linhas,total = executarSelect(consulta,1)
+    numero = int(linhas[0])
+    return (numero)
+
+'''
+Verifica se um projeto pode indicar bolsistas
+'''
+def podeIndicarBolsistas(id):
+    bolsas_obtidas = int(obterColunaUnica('editalProjeto','bolsas_concedidas','id',id))
+    if bolsas_obtidas>0:
+        #Verificar se ainda restam bolsistas a serem indicados
+        if (quantosBolsistasIndicados(id)<bolsas_obtidas):
+            return(True)
+        else:
+            return(False)
+    else:
+        return(False)
+
+'''
+Verifica se o edital está no prazo para indicação de bolsistas/voluntários
+'''
+def dataDeIndicacao(codigoEdital):
+    consulta = """SELECT id FROM editais WHERE NOW() BETWEEN indicacao_inicio AND indicacao_termino AND id=""" + codigoEdital
+    linhas,total = executarSelect(consulta)
+    if total==0:
+        return (False)
+    else:
+        return (True)
+
+@app.route("/indicacao", methods=['GET', 'POST'])
+def indicacao():
+    if request.method == "GET":
+        #Recuperando o código do projeto
+        if (('id' in request.args) and ('b' in request.args)):
+            idProjeto = str(request.args.get('id'))
+            #b = 1 (bolsista); b = 0 (voluntário)
+            b = int(request.args.get('b'))
+            edital = int(obterColunaUnica('editalProjeto','tipo','id',idProjeto))
+            indicacao_inicio = str(obterColunaUnica('editais',"""DATE_FORMAT(indicacao_inicio,'%d/%m/%Y')""",'id',str(edital)))
+            indicacao_fim = str(obterColunaUnica('editais',"""DATE_FORMAT(indicacao_termino,'%d/%m/%Y')""",'id',str(edital)))
+            modalidade = int(obterColunaUnica('editalProjeto','modalidade','id',idProjeto))
+            if (autenticado()):
+                if idSiape(idProjeto,session['username']):
+                    if dataDeIndicacao(str(edital)):
+                        if b==1: #INDICAÇÃO DE BOLSISTA
+                            if podeIndicarBolsistas(idProjeto):
+                                return(render_template('indicacao.html',inicio=indicacao_inicio,fim=indicacao_fim,continua=1,modalidade=modalidade,vaga=b,idProjeto=idProjeto))
+                            else:
+                                return("Você já indicou todos os bolsistas do projeto. Caso tenha havido algum engano, favor entrar em contato com a PRPI.")
+                        else: #INDICAÇÃO DE VOLUNTÁRIO
+                            if podeIndicarVoluntarios(idProjeto):
+                                return(render_template('indicacao.html',inicio=indicacao_inicio,fim=indicacao_fim,continua=1,modalidade=modalidade,vaga=b,idProjeto=idProjeto))
+                            else:
+                                return("Você já indicou todos os voluntários do projeto. Caso tenha havido algum engano, favor entrar em contato com a PRPI.")
+                    else:
+                        return(render_template('indicacao.html',inicio=indicacao_inicio,fim=indicacao_fim,continua=0))
+                else:
+                    return("Acesso negado!")
+            else:
+                return(redirect(url_for('login')))
+        else:
+            return("OK")
+    else:
+        return("OK")
+
+@app.route("/efetivarIndicacao", methods=['GET', 'POST'])
+def efetivarIndicacao():
+    if request.method == "POST":
+        try:
+            idProjeto = str(request.form['idProjeto'])
+            vaga = int(request.form['vaga'])
+            if ( ( (vaga==1)  and (podeIndicarBolsistas(idProjeto)) ) or ( (vaga==0)  and (podeIndicarVoluntarios(idProjeto)) ) ):
+                nome = unicode(request.form['nome'])
+                nascimento = str(request.form['nasc'])
+                estado_civil = int(request.form['estado_civil'])
+                sexo = int(request.form['sexo'])
+                rg = unicode(request.form['rg'])
+                orgao = unicode(request.form['orgao'])
+                uf = unicode(request.form['uf'])
+                cpf = unicode(request.form['cpf'])
+                vaga = int(request.form['vaga'])
+                modalidade = int(request.form['modalidade'])
+                curso = unicode(request.form['curso'])
+                matricula = unicode(request.form['matricula'])
+                ingresso = int(request.form['ingresso'])
+                lattes = unicode(request.form['lattes'])
+                banco = unicode(request.form['banco'])
+                agencia = unicode(request.form['agencia'])
+                conta = unicode(request.form['conta'])
+                telefone = unicode(request.form['tel_fixo'])
+                celular = unicode(request.form['tel_cel'])
+                email = unicode(request.form['email'])
+                endereco = unicode(request.form['endereco'])
+                escola = unicode(request.form['escola'])
+                conclusao = int(request.form['conclusao'])
+
+                nomeDoArquivoTermo = ""
+                if 'termo' in request.files:
+                    token = id_generator()
+                    nomeDoArquivoTermo = "TERMO." + idProjeto + "." + token + ".pdf"
+                    filename = anexos.save(request.files['termo'],name=nomeDoArquivoTermo)
+
+                nomeDoArquivoRg = ""
+                if 'rg_cpf' in request.files:
+                    token = id_generator()
+                    nomeDoArquivoRg = "RG_CPF." + idProjeto + "." + token + ".pdf"
+                    filename = anexos.save(request.files['rg_cpf'],name=nomeDoArquivoRg)
+
+                nomeDoArquivoExtrato = ""
+                if 'extrato' in request.files:
+                    token = id_generator()
+                    nomeDoArquivoExtrato = "EXTRATO." + idProjeto + "." + token + ".pdf"
+                    filename = anexos.save(request.files['extrato'],name=nomeDoArquivoExtrato)
+
+                nomeDoArquivoHistorico = ""
+                if 'historico' in request.files:
+                    token = id_generator()
+                    nomeDoArquivoHistorico = "HISTORICO." + idProjeto + "." + token + ".pdf"
+                    filename = anexos.save(request.files['historico'],name=nomeDoArquivoHistorico)
+
+                codigoEdital = obterColunaUnica('editalProjeto','tipo','id',idProjeto)
+                inicio = obterColunaUnica('editais','discente_inicio','id',str(codigoEdital))
+                fim = obterColunaUnica('editais','discente_fim','id',str(codigoEdital))
+                ## TODO: gravar no banco de dados
+                consulta = """INSERT INTO indicacoes (idProjeto,nome,nascimento,estado_civil,sexo,rg,orgao_emissor,uf,
+                cpf,tipo_de_vaga,modalidade,curso,matricula,ano_de_ingresso,lattes,nome_banco,agencia,conta,telefone,celular,
+                email,endereco,escola,ano_conclusao,arquivo_cpf_rg,arquivo_extrato,arquivo_historico,arquivo_termo,inicio,fim)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) """
+                valores = (int(idProjeto),nome,nascimento,estado_civil,sexo,rg,orgao,uf,cpf,vaga,modalidade,curso,matricula,ingresso,lattes,banco,agencia,conta,telefone,celular,email,endereco,escola,conclusao,nomeDoArquivoRg,nomeDoArquivoExtrato,nomeDoArquivoHistorico,nomeDoArquivoTermo,inicio,fim)
+                inserir(consulta,valores)
+                getID = "SELECT id FROM indicacoes WHERE idProjeto=" + idProjeto + " ORDER BY id DESC LIMIT 1"
+                ultimo_id,total = executarSelect(getID,1)
+                idIndicacao = int(ultimo_id[0])
+                titulo_projeto = obterColunaUnica('editalProjeto','titulo','id',idProjeto)
+                orientador = obterColunaUnica('editalProjeto','nome','id',idProjeto)
+                email = obterColunaUnica('editalProjeto','email','id',idProjeto)
+                email2 = "pesquisa.prpi@ufca.edu.br"
+                texto_email = render_template('confirmacao_indicacao.html',vaga=vaga,id_projeto=idProjeto,indicado=nome,proponente=orientador,titulo=titulo_projeto,email_proponente=email,idIndicacao=idIndicacao)
+                if vaga==1:
+                    msg = Message(subject = "Plataforma Yoko - INDICAÇÃO DE BOLSISTA",recipients=[email,email2],html=texto_email)
+                else:
+                    msg = Message(subject = "Plataforma Yoko - INDICAÇÃO DE VOLUNTARIO",recipients=[email,email2],html=texto_email)
+                mail.send(msg)
+                return(render_template('confirmacao_indicacao.html',vaga=vaga,id_projeto=idProjeto,indicado=nome,proponente=orientador,titulo=titulo_projeto,email_proponente=email,idIndicacao=idIndicacao))
+            else:
+                return (u"Você já indicou todos os bolsistas/voluntários. Entrar em contato através do e-mail atendimento.prpi@ufca.edu.br")
+        except:
+            e = sys.exc_info()[0]
+            logging.error(e)
+            logging.error("ERRO Na função /efetivarIndicacao. Ver consulta abaixo.")
+            return("ERRO!")
+
+    else:
+        return("OK")
 
 if __name__ == "__main__":
     app.run()

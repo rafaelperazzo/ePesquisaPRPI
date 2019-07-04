@@ -88,6 +88,7 @@ tr:nth-child(even) {
 
       <th>Id</th><th>Edital</th><th>Situação do Edital</th><th>Orientador</th><th>Lotação</th><th>Titulo</th><th>Início</th><th>Fim
       </th><th>Situação do Projeto</th><th>Avaliações</th><th>Bolsas Solicitadas</th><th>Bolsas Concedidas</th>
+      <th>Indicações</th><th>Orientandos</th>
       <p>{% for linha in projetos2019 %}</p>
       <tr>
         <td>{{linha[0]}}</td>
@@ -117,7 +118,7 @@ tr:nth-child(even) {
                         <p class="indefinido">INDEFINIDO</p>
                     {% endif %}
               {% else %}
-                    INDEFINIDO
+                      <p class="indefinido">INDEFINIDO</p>
               {% endif %}
           {%else %}
           <p class="aprovado">APROVADO</p>
@@ -130,6 +131,24 @@ tr:nth-child(even) {
         {% endif %}
         <td>{{linha[11]}}</td>
         <td>{{linha[12]}}</td>
+        <td>
+
+          {% for i in range(1,linha[12]+1) %}
+            <a href="/pesquisa/indicacao?id={{linha[0]}}&b=1">INDICAR BOLSISTA {{ i }}</a> <BR><BR>
+          {% endfor %}
+
+          {% for i in range(1,linha[11]-linha[12]+1) %}
+            <a href="/pesquisa/indicacao?id={{linha[0]}}&b=0">INDICAR VOLUNTÁRIO {{ i }}</a> <BR><BR>
+          {% endfor %}
+
+        </td>
+        <td>
+          {% if linha[17]|length %}
+              {{linha[17]}}
+          {% else %}
+              -
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </table>

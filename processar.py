@@ -46,17 +46,17 @@ def atualizar(consulta):
 
 def atualizar(consulta):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
-    conn.autocommit(True)
+    conn.autocommit(False)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
     try:
         cursor.execute(consulta)
         conn.commit()
     except MySQLdb.Error, e:
-        #e = sys.exc_info()[0]
+        e = sys.exc_info()[0]
         logging.debug(e)
 	logging.debug(consulta)
-        #conn.rollback()
+        conn.rollback()
     finally:
         cursor.close()
         conn.close()
@@ -275,7 +275,7 @@ def enviarAgradecimentosParaAvaliadores(codigoEdital):
     conn = MySQLdb.connect(host="localhost", user="pesquisa", passwd=PASSWORD, db="pesquisa", charset="utf8", use_unicode=True)
     conn.select_db('pesquisa')
     cursor  = conn.cursor()
-    consulta = "SELECT a.avaliador,a.token FROM avaliacoes a, editalProjeto e WHERE e.categoria=1 AND a.finalizado=1 AND a.idProjeto=e.id AND e.tipo=" + codigoEdital
+    consulta = """SELECT a.avaliador,a.token FROM avaliacoes a, editalProjeto e WHERE a.avaliador not like '%ufca%' AND e.categoria=1 AND a.finalizado=1 AND a.idProjeto=e.id AND e.tipo=""" + codigoEdital
     cursor.execute(consulta)
     linhas = cursor.fetchall()
     if (not podeAvaliar(codigoEdital)) and (not jaAgradeceu(codigoEdital)): #Se não foi enviado agradecimento e as avaliações já encerraram-se
@@ -328,13 +328,14 @@ gerarLinkAvaliacao()
 if (len(sys.argv)==2):
     print("Enviando e-mail para todos avaliadores que não finalizaram.")
     codigoEdital = str(sys.argv[1])
-    enviarLinksParaAvaliadores(codigoEdital,enviarApenasParaNaoEnviados)
+    #enviarLinksParaAvaliadores(codigoEdital,enviarApenasParaNaoEnviados)
 elif (len(sys.argv)>2):
     print("Enviando e-mail para todos avaliadores que não receberam o convite.")
     codigoEdital = str(sys.argv[1])
     enviarApenasParaNaoEnviados = int(sys.argv[2])
-    enviarLinksParaAvaliadores(codigoEdital,enviarApenasParaNaoEnviados)
-else:
-    enviarLinksParaAvaliadores("0",0)
-enviarEmail("rafael.mota@ufca.edu.br","[Cron Executado]","",u"Edital: [" + codigoEdital +u"]<BR> Solicitação de Avaliação/Agradecimento para avaliadores que não finalizaram.",0)
-#enviarAgradecimentosParaAvaliadores(codigoEdital)
+    #enviarLinksParaAvaliadores(codigoEdital,enviarApenasParaNaoEnviados)
+#else:
+    #enviarLinksParaAvaliadores("0",0)
+#enviarEmail("rafael.mota@ufca.edu.br","[Cron Executado]","",u"Edital: [" + codigoEdital +u"]<BR> Solicitação de Avaliação/Agradecimento para avaliadores que não finalizaram.",0)
+
+enviarAgradecimentosParaAvaliadores(codigoEdital)

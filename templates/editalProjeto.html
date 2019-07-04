@@ -88,25 +88,39 @@ $(document).ready(function(){
     <title>Propostas submetidas a edital</title>
   </head>
   <body>
-
+    <center><img src="{{raiz}}{{ url_for('static', filename='brasao_uniao.png')}}" width="120" height="130" alt=""></center>
+    <center>
+    MINISTÉRIO DA EDUCAÇÃO<br>
+    UNIVERSIDADE FEDERAL DO CARIRI<br>
+    PRÓ-REITORIA DE PESQUISA, INOVAÇÃO E PÓS-GRADUAÇÃO<br>
+    COORDENADORIA DE PESQUISA <br>
+    </center>
+    <hr>
     <h1><b>Propostas submetidas a Edital</b></h1>
     <h3>{{ descricao }} </h3>
+    {% if resultado==1 %}
+        <center><h2>{{mensagem}}</h2></center>
+
+    {% endif %}
 
     <hr>
+    {% if resultado==0 %}
     <h1><b>Resumo da Demanda</b></h1>
-    <table>
-      <thead>
-          <th>Unidade Academica</th><th>Número de propostas submetidas</th><th>Previsão de cota (UFCA)</th><th>Previsão de cota (CNPq)</th>
-      </thead>
-      <tbody id="resumoDemanda">
-            {% for linha in linhas_demanda %}
-            <tr>
-              <td align="center">{{linha[0]}}</td><td align="center">{{linha[1]}}</td><td align="center">({{ ((linha[1]/total)*bolsas_ufca)|round|int }})</td><td align="center">({{ ((linha[1]/total)*bolsas_cnpq)|round|int }})</td>
-            </tr>
-            {% endfor %}
-       </tbody>
-    </table>
-    <b>Total: {{total}}</b>
+
+          <table>
+            <thead>
+                <th>Unidade Academica</th><th>Número de propostas submetidas</th><th>Previsão de cota (UFCA)</th><th>Previsão de cota (CNPq)</th>
+            </thead>
+            <tbody id="resumoDemanda">
+                  {% for linha in linhas_demanda %}
+                  <tr>
+                    <td align="center">{{linha[0]}}</td><td align="center">{{linha[1]}}</td><td align="center">({{ ((linha[1]/total)*bolsas_ufca)|round|int }})</td><td align="center">({{ ((linha[1]/total)*bolsas_cnpq)|round|int }})</td>
+                  </tr>
+                  {% endfor %}
+             </tbody>
+          </table>
+          <b>Total: {{total}}</b>
+
 
     <center><img src="{{ url_for('static', filename='/plots/grafico-oferta-demanda-2.png')}}?rnd={{ range(1, 10000) | random }}" style="width:50%" alt="" align="center"></center>
     <center><figcaption>Gráfico 0: Oferta/Demanda de bolsas (total).</figcaption></center>
@@ -133,6 +147,7 @@ $(document).ready(function(){
       </div>
     </div>
     <br>
+
     <div class="row">
       <div class="column">
         <center><img src="{{ url_for('static', filename='/plots/grafico-novos1.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center"></center>
@@ -143,6 +158,7 @@ $(document).ready(function(){
         <center><figcaption>Gráfico 6: Situação (em quantidades) dos projetos novos.</figcaption></center>
       </div>
     </div>
+
     <br>
     <div class="row">
       <div class="column">
@@ -188,17 +204,27 @@ $(document).ready(function(){
       </div>
     </div>
     <hr>
-    <h1>Propostas ordenadas pelo ID</h1>
+    {% endif %}
+
+    <h1>Propostas ordenadas por Unidade Academica e Scorelattes</h1>
     <input id="myInput" type="text" placeholder="Procurar.."><BR>
     <table>
       <thead>
-        <th>Id</th><th>Código do Edital</th><th>Categoria</th><th>Proponente</th><th>E-mail</th><th>UA</th><th>Prioridade</th><th>ScoreLattes</th><th>Título</th><th>Projeto</th><th>Plano1</th><th>Plano2</th><th>Lattes</th><th>Comprovantes</th><th>Data</th>
-        <th>Início</th><th>Fim</th>
+        <th>Id</th>
+        {% if resultado==0 %}<th>Código do Edital</th>{% endif %}
+        <th>Categoria</th><th>Proponente</th>
+        {% if resultado==0 %} <th>E-mail</th> {% endif %}
+        <th>UA</th><th>Prioridade</th><th>ScoreLattes</th><th>Título</th>
+        {% if resultado==0 %} <th>Projeto</th><th>Plano1</th><th>Plano2</th> {% endif %}
+        <th>Lattes</th>
+        {% if resultado==0 %} <th>Comprovantes</th> {% endif %}
+        {% if resultado==0 %}<th>Data</th><th>Início</th><th>Fim</th>{% endif %}
+        <th>Bolsas solicitadas</th><th>Bolsas concedidas</th><th>OBS</th>
       </thead>
     <tbody id="myTable">
     {% for linha in listaProjetos %}
     <tr>
-    <td>{{ linha[0] }}</td><td>{{ linha[1] }}</td>
+    <td>{{ linha[0] }}</td>{% if resultado==0 %}<td>{{ linha[1] }}</td>{% endif %}
     <td>
       {% if linha[2]==1 %}
       PROJETO NOVO
@@ -207,29 +233,34 @@ $(document).ready(function(){
       PROJETO EM ANDAMENTO
       {% endif %}
     </td>
-    <td>{{ linha[3] }}</td><td>{{ linha[4] }}</td><td>{{ linha[5] }}</td><td>{{ linha[16] }}</td><td><a href="/pesquisa/lattesDetalhado?id={{ linha[0] }}">{{ linha[6] }}</a></td><td>{{ linha[7] }}</td>
-    <td>
-      {% if linha[8]!="0" %}
-      <a href="/pesquisa/static/files/{{ linha[8] }}">PROJETO</a>
-      {% else %}
-      -
-      {% endif %}
-    </td>
-    <td>
-      {% if linha[9]!="0" %}
-      <a href="/pesquisa/static/files/{{ linha[9] }}">PLANO1</a>
-      {% else %}
-      -
-      {% endif %}
-    </td>
-    <td>
-      {% if linha[10]!="0" %}
-      <a href="/pesquisa/static/files/{{ linha[10] }}">PLANO2</a>
-      {% else %}
-      -
-      {% endif %}
-    </td>
+    <td>{{ linha[3] }}</td>
+    {% if resultado==0 %} <td>{{ linha[4] }}</td> <!-- E-MAIL --> {% endif %}
+    <td>{{ linha[5] }}</td><td>{{ linha[16] }}</td><td><a href="/pesquisa/lattesDetalhado?id={{ linha[0] }}">{{ linha[6] }}</a></td><td>{{ linha[7] }}</td>
+    {% if resultado==0 %}
+          <td>
+            {% if linha[8]!="0" %}
+            <a href="/pesquisa/static/files/{{ linha[8] }}">PROJETO</a>
+            {% else %}
+            -
+            {% endif %}
+          </td>
+          <td>
+            {% if linha[9]!="0" %}
+            <a href="/pesquisa/static/files/{{ linha[9] }}">PLANO1</a>
+            {% else %}
+            -
+            {% endif %}
+          </td>
+          <td>
+            {% if linha[10]!="0" %}
+            <a href="/pesquisa/static/files/{{ linha[10] }}">PLANO2</a>
+            {% else %}
+            -
+            {% endif %}
+          </td>
+    {% endif %}
     <td><a href="/pesquisa/static/files/{{ linha[11] }}">LATTES</a></td>
+    {% if resultado==0 %}
     <td>
       {% if linha[12]!="0" %}
       <a href="/pesquisa/static/files/{{ linha[12] }}">COMPROVANTES</a>
@@ -237,78 +268,84 @@ $(document).ready(function(){
       -
       {% endif %}
     </td>
-    <td>{{ linha[13] }}</td>
-    <td>{{ linha[14] }}</td>
-    <td>{{ linha[15] }}</td>
+    {% endif %}
+
+    {% if resultado==0 %}<td>{{ linha[13] }}</td><td>{{ linha[14] }}</td><td>{{ linha[15] }}</td>{% endif %}
+    <td>{{ linha[17] }}</td>
+    <td>{{ linha[18] }}</td>
+    <td>{{ linha[19]|safe }}</td>
     </tr>
     {% endfor %}
     </tbody>
     </table>
     Total: {{total}} propostas submetidas.
 
-    <hr>
-    <h1>PROJETOS NOVOS (em avaliação)</h1>
-    <input id="txtNovos" type="text" placeholder="Procurar.."><br>
-    <table>
-      <thead>
-      <th>Finalizadas as Avaliações ?</th><th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Palavras-Chave</th><th>Qtde de avaliações finalizadas</th><th>Inserir Consultor<th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
-      <th>Aprovados</th><th>NÃO Aprovados</th><th>Indefinidos</th><th>Situação</th>
-    </thead>
-    <tbody id="tabelaNovos">
-      {% for linha in novos %}
-      <tr>
-        <td>
-          {% if (linha[9]==0) %}
-            <img src="{{ url_for('static', filename='interrogacao_vermelha.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
-            SEM AVALIAÇÕES!
-          {% endif %}
-          {% if (linha[9]==1) %}
-            <img src="{{ url_for('static', filename='interrogacao_amarela.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
-            APENAS 1 AVALIAÇÃO!
-          {% endif %}
-          {% if (linha[9]>1) %}
-            {% if linha[12]-linha[11]==0 %}
-              <img src="{{ url_for('static', filename='interrogacao_amarela.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
-              <br>EMPATADO
-            {% else %}
-              {% if linha[12]-linha[11]>0 %}
-                <img src="{{ url_for('static', filename='aprovado.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
-              {% else %}
-                <img src="{{ url_for('static', filename='reprovado.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
-              {% endif %}
-            {% endif %}
-          {% endif %}
-        </td>
-        <td>{{linha[0]}}</td><td>{{linha[1]}}</td><td>{{linha[2]}}</td>
-        <td>
-          <a href="/pesquisa/static/files/{{ linha[4] }}">{{linha[3]}}</a></td>
-        <td>{{linha[13]}}<td>{{linha[9]}}</td></td><td><a href="/pesquisa/avaliacoesNegadas?edital={{codigoEdital}}&id={{linha[0]}}">Adicionar consultor</a></td><td>{{linha[5]|safe}}</td><td>{{linha[6]|safe}}</td>
-        <td>{{linha[7]|safe}}</td>
-        <td>{{linha[8]|safe}}</td>
-        <td>{{linha[9]}}</td>
-        <td>{{linha[12]}}</td>
-        <td>{{linha[11]}}</td>
-        <td>{{linha[10]}}</td>
-        <td>
-          {% if (linha[12]+linha[11])>=2 %}
-            {% if linha[12]-linha[11]>0 %}
-            <p class="aprovado">APROVADO</p>
-            {% endif %}
-            {% if linha[12]-linha[11]<0 %}
-            <p class="reprovado">NÃO APROVADO</p>
-            {% endif %}
-            {% if linha[12]-linha[11]==0 %}
-            <p class="indefinido">INDEFINIDO</p>
-            {% endif %}
-          {% else %}
-            <p class="indefinido">INDEFINIDO</p>
-          {% endif %}
+    {% if resultado==0 %}
 
-        </td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    Total: {{total_novos}} projetos novos submetidos.
+              <hr>
+              <h1>PROJETOS NOVOS (em avaliação)</h1>
+              <input id="txtNovos" type="text" placeholder="Procurar.."><br>
+              <table>
+                <thead>
+                <th>Finalizadas as Avaliações ?</th><th>ID</th><th>Nome</th><th>UA</th><th>Título</th><th>Palavras-Chave</th><th>Qtde de avaliações finalizadas</th><th>Inserir Consultor<th>Consultores</th><th>Recomendações</th><th>Enviado?</th><th>Aceitou?</th><th>Finalizados</th>
+                <th>Aprovados</th><th>NÃO Aprovados</th><th>Indefinidos</th><th>Situação</th>
+              </thead>
+              <tbody id="tabelaNovos">
+                {% for linha in novos %}
+                <tr>
+                  <td>
+                    {% if (linha[9]==0) %}
+                      <img src="{{ url_for('static', filename='interrogacao_vermelha.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+                      SEM AVALIAÇÕES!
+                    {% endif %}
+                    {% if (linha[9]==1) %}
+                      <img src="{{ url_for('static', filename='interrogacao_amarela.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+                      APENAS 1 AVALIAÇÃO!
+                    {% endif %}
+                    {% if (linha[9]>1) %}
+                      {% if linha[12]-linha[11]==0 %}
+                        <img src="{{ url_for('static', filename='interrogacao_amarela.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+                        <br>EMPATADO
+                      {% else %}
+                        {% if linha[12]-linha[11]>0 %}
+                          <img src="{{ url_for('static', filename='aprovado.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+                        {% else %}
+                          <img src="{{ url_for('static', filename='reprovado.png')}}?rnd={{ range(1, 10000) | random }}" style="width:100%" alt="" align="center">
+                        {% endif %}
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                  <td><a href="/pesquisa/meusPareceres?id={{linha[0]}}&todos=1">{{linha[0]}}</a></td><td>{{linha[1]}}</td><td>{{linha[2]}}</td>
+                  <td>
+                    <a href="/pesquisa/static/files/{{ linha[4] }}">{{linha[3]}}</a></td>
+                  <td>{{linha[13]}}<td>{{linha[9]}}</td></td><td><a href="/pesquisa/avaliacoesNegadas?edital={{codigoEdital}}&id={{linha[0]}}">Adicionar consultor</a></td><td>{{linha[5]|safe}}</td><td>{{linha[6]|safe}}</td>
+                  <td>{{linha[7]|safe}}</td>
+                  <td>{{linha[8]|safe}}</td>
+                  <td>{{linha[9]}}</td>
+                  <td>{{linha[12]}}</td>
+                  <td>{{linha[11]}}</td>
+                  <td>{{linha[10]}}</td>
+                  <td>
+                    {% if (linha[12]+linha[11])>=2 %}
+                      {% if linha[12]-linha[11]>0 %}
+                      <p class="aprovado">APROVADO</p>
+                      {% endif %}
+                      {% if linha[12]-linha[11]<0 %}
+                      <p class="reprovado">NÃO APROVADO</p>
+                      {% endif %}
+                      {% if linha[12]-linha[11]==0 %}
+                      <p class="indefinido">INDEFINIDO</p>
+                      {% endif %}
+                    {% else %}
+                      <p class="indefinido">INDEFINIDO</p>
+                    {% endif %}
+
+                  </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+              Total: {{total_novos}} projetos novos submetidos.
+      {% endif %}
   </body>
 </html>
